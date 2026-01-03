@@ -112,7 +112,7 @@ where:
 
 Example:
 
-https://youtu.be/-QOWn2Ga2w0
+[Benchmark category 3 demo](https://youtu.be/-QOWn2Ga2w0)
 
 For a complete description of the simulator architecture, control schemes, evaluation metrics, and experimental methodology, the reader is referred to the associated journal/conference article, which provides a detailed and rigorous explanation of the benchmark framework.
 
