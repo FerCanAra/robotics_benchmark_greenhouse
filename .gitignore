@@ -1,0 +1,27 @@
+############################
+# Python cache (package)
+############################
+**/__pycache__/
+*.pyc
+*.pyo
+
+############################
+# Test & lint caches
+############################
+.pytest_cache/
+.coverage
+htmlcov/
+
+############################
+# ROS / colcon (por seguridad)
+############################
+build/
+install/
+log/
+
+############################
+# Editor / OS
+############################
+*~
+.DS_Store
+Thumbs.db
