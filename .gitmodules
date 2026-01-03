@@ -6,7 +6,3 @@
 	path = mvsim
 	url = https://github.com/MRPT/mvsim.git
 	branch = nav-benchmark-greenhouse
-[submodule "externals/mvsim"]
-	path = externals/mvsim
-	url = https://github.com/MRPT/mvsim.git
-	branch = nav-benchmark-greenhouse
