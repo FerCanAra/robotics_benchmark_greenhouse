@@ -10,8 +10,38 @@ License: 3-clause BSD License
 Copyright (C) 2014-2025 Fernando Cañadas Aránega <fernando.ca@ual.es> (University of Almeria) and collaborators
 
 
+Preequisitos
+--------------------
+Para poder utilizar el simulador, debera tener instalado los siguientes paquetes:
+
+1. [Robot Operating System (ROS 2) Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html). Se recomenda installar el full desktop
+2. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). Se instala dacilmente con el siguiente comando:
+```
+sudo apt install libmrpt-dev mrpt-apps
+```
+3. [Navigation 2 (Nav2)](https://docs.nav2.org/getting_started/index.html). Se instala dacilmente con el siguiente comando:
+```
+sudo apt install ros-$ROS_DISTRO-navigation2
+sudo apt install ros-$ROS_DISTRO-nav2-bringup
+```
+
 Installation
 --------------------
+Para poder ejecutar el el simulador, se debe instalar el repositorio oficial del proyecto. Se puede hacer facilmente mediante los siguientes comandos.
+
+```
+mkdir -p ~/robotics_benchmark_greenhouse/src
+cd ~/robotics_benchmark_greenhouse/src
+git clone --recurse-submodules https://github.com/FerCanAra/robotics_benchmark_greenhouse.git
+cd robotics_benchmark_greenhouse
+git submodule update --init --recursive
+cd ../..
+colcon build --packages-select mvsim --cmake-args -DCMAKE_BUILD_TYPE=Release
+source install/setup.bash
+```
+
+
+
 
 See [installation documentation](https://mvsimulator.readthedocs.io/en/latest/install.html) for all the details and options. 
 
