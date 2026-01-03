@@ -17,9 +17,9 @@ License
 --------------------
 This project is distributed under the **BSD 3-Clause License**.
 
-Copyright © 2005–2024, Individual contributors  
-Copyright © 2012–2020, University of Almeria  
+Copyright © 2026, Individual contributors  
 Project owner: Fernando Cañadas Aránega <fernando.ca@ual.es> (University of Almeria) and collaborators
+Copyright © 2012–2020, University of Almeria  
 
 See the [LICENSE](LICENSE) file for full license text.
 
