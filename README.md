@@ -56,7 +56,8 @@ The proposed simulator is structured according to a hierarchical control archite
 
 #### Control layers
 
-1. **Low level**: The low-level control layer focuses on the internal control of the robot actuators, specifically the motor dynamics. This level is implemented directly within the MVSim simulation environment, where the robot’s physical parameters and control gains can be configured through dedicated parameter files. This layer is responsible for translating velocity commands into motor torques while accounting for realistic vehicle dynamics, including wheel–ground interactions. The low-level control scheme adopted in the benchmark is illustrated in the corresponding block diagram provided in the accompanying article.
+1. **Low level**: The low-level control layer focuses on the internal control of the robot actuators, specifically the motor dynamics. This level is implemented directly within the MVSim simulation environment, where the robot’s physical parameters and control gains can be configured through dedicated [parameter files](robotics_benchmark_greenhouse/benchmark_bringup/benchmark_bringup
+/control_params/c1_pid_params.yaml). This layer is responsible for translating velocity commands into motor torques while accounting for realistic vehicle dynamics, including wheel–ground interactions. The low-level control scheme adopted in the benchmark is illustrated in the corresponding block diagram provided in the accompanying article.
 
 <img width="600" height="300" alt="Esquema_1" src="https://github.com/user-attachments/assets/6b02abaa-0042-4508-87c7-4acbd2ca9cb4" />
 
