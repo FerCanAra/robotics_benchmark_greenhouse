@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>benchmark_bringup</name>
+  <version>0.1.0</version>
+  <description>Benchmark bringup for greenhouse robotics.</description>
+
+  <maintainer email="fernando.ca@ual.es">fca</maintainer>
+  <license>BSD</license>
+
+  <!-- Dependencias runtime Python -->
+  <exec_depend>rclpy</exec_depend>
+  <exec_depend>geometry_msgs</exec_depend>
+  <exec_depend>nav_msgs</exec_depend>
+  <exec_depend>std_msgs</exec_depend>
+  <exec_depend>tf_transformations</exec_depend>
+  <exec_depend>nav2_simple_commander</exec_depend>
+
+  <!-- Dependencia del paquete de mensajes -->
+  <exec_depend>benchmark_msg</exec_depend>
+  <build_depend>benchmark_msg</build_depend>
+
+  <export>
+    <build_type>ament_python</build_type>
+  </export>
+</package>
