@@ -4,7 +4,12 @@
 
 A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouse
 ======================================
-This repository provides a standardized, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under realistic operating conditions. The framework combines a physics-based simulation with a high-fidelity greenhouse model and a hierarchical control architecture spanning low-, mid-, and high-level control modules. Representative disturbance scenarios and quantitative performance metrics enable fair, repeatable comparisons of different control strategies, while a plugin-based design enables easy integration of custom controllers and planners. It used [MultiVehicle simulator (MVSim) ]([https://github.com/MRPT/mvsim]), a lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots. It is tailored to the analysis of vehicle dynamics, wheel-ground contact forces, and accurate simulation of typical robot sensors (e.g., 2D and 3D lidars). As a package manager, it is used [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file), a professionally-supported successor of the ROS Navigation Stack deploying the same kinds of technology powering Autonomous Vehicles brought down, optimized, and reworked for mobile and surface robotics. 
+This repository provides a standardized, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under realistic operating conditions. The framework combines a physics-based simulation with a high-fidelity greenhouse model and a hierarchical control architecture spanning low-, mid-, and high-level control modules. Representative disturbance scenarios and quantitative performance metrics enable fair, repeatable comparisons of different control strategies, while a plugin-based design enables easy integration of custom controllers and planners. It used [MultiVehicle simulator (MVSim)](https://github.com/MRPT/mvsim), a lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots. It is tailored to the analysis of vehicle dynamics, wheel-ground contact forces, and accurate simulation of typical robot sensors (e.g., 2D and 3D lidars). As a package manager, it is used [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file), a professionally-supported successor of the ROS Navigation Stack deploying the same kinds of technology powering Autonomous Vehicles brought down, optimized, and reworked for mobile and surface robotics. 
+
+
+<img width="1840/2" height="1234/2" alt="Mvsim_greenhouse" src="https://github.com/user-attachments/assets/d35b3e2f-8a23-4ca4-bbf0-4aa99508d0f5" />
+<img width="1528" height="972" alt="Vista_interna" src="https://github.com/user-attachments/assets/8d4e95b9-e20c-42a8-9b1c-aface9250e65" />
+
 
 License
 --------------------
@@ -58,7 +63,7 @@ The proposed simulator is structured according to a hierarchical control archite
    
 3. **High level**: The high-level control layer focuses on global path planning, computing efficient trajectories within the environment while accounting for obstacles and workspace constraints. In this benchmark, the [Lazzy Theta star](https://idm-lab.org/bib/abstracts/papers/aaai10b.pdf) global planner is employed and integrated via the Nav2 framework. All planning parameters can be modified, enabling users to analyze the impact of high-level planning decisions on overall navigation performance. The complete high-level control structure is presented in the associated schematic.
 
-#### Benchmark Categories
+### Benchmark Categories
 
 To support users with different expertise levels and research objectives, the benchmark defines three evaluation categories:
 
@@ -74,7 +79,7 @@ To support users with different expertise levels and research objectives, the be
   
 <img width="1271" height="427" alt="Esquema_3" src="https://github.com/user-attachments/assets/cde26dc5-5c5b-4aae-931d-901f31bc98b5" />
 
-#### Benchmark Categories
+### Benchmark Categories
 
 To evaluate controller robustness under realistic operating conditions, the benchmark includes three types of disturbances, which can be activated independently or in combination:
 
@@ -84,7 +89,7 @@ To evaluate controller robustness under realistic operating conditions, the benc
 
 - Terrain Change: Greenhouse environments often contain heterogeneous soil types. This disturbance emulates changes in terrain properties that directly affect the physical friction model. When activated, three distinct soil types are defined, each characterized by specific values of: friction coefficient (μ), rolling resistance coefficient (Crr), and damping factor (D).
 
-#### Running
+### Running
 
 Todas estas variables se pueden lanzar con el siguiente comando:
 
