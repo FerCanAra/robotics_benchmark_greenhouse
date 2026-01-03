@@ -39,3 +39,14 @@ ros2 launch mvsim launch_slam_benchmark.launch.py
 En otra terminal, guardar el mapa:
 
 ros2 run nav2_map_server map_saver_cli -f ~/name_map
+
+
+
+
+
+```
+t clone --recurse-submodules https://github.com/FerCanAra/benchmark_bringup.git
+
+
+
+```
