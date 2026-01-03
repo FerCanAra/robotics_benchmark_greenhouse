@@ -8,6 +8,8 @@ This repository provides a standardized, reproducible benchmark for mobile robot
 
 <img width="400" height="300" alt="Mvsim_greenhouse" src="https://github.com/user-attachments/assets/d35b3e2f-8a23-4ca4-bbf0-4aa99508d0f5" /> <img width="420" height="320" alt="Vista_interna" src="https://github.com/user-attachments/assets/8d4e95b9-e20c-42a8-9b1c-aface9250e65" />
 
+The simulator has been tested on ROS2 Humble, Ubuntu 22.04.
+
 Paper citation
 ------------------
 
