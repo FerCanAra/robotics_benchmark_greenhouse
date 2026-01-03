@@ -43,9 +43,8 @@
             </visual>
         </rr_wheel>
 
-        <chassis mass="70" zmin="0.05" zmax="0.25">
+        <chassis mass="${mass}" zmin="0.05" zmax="0.25">
             <shape_from_visual/>
-            <!-- automatic shape,zmin,zmax from 3D mesh-->
         </chassis>
 
         <!-- Tarea 1: Una clase en python del esqueo del controller del C++ -->
@@ -55,19 +54,20 @@
         <controller class="twist_pid">
             <!-- PID Params + Filter noise -->
             <!-- <KP>300</KP>  <KI>100</KI>  <KD>0</KD>  <N>0</N> -->
-            <KP>70</KP>
-            <KI>40</KI>
-            <KD>0</KD>
-            <N>0</N>
-            <enable_antiwindup>true</enable_antiwindup>
+            <KP>$env{KP}</KP>
+            <KI>$env{KI}</KI>
+            <KD>$env{KD}</KD>
+            <N>$env{N}</N>
+            <enable_antiwindup>$env{ENABLE_ANTIWINDUP}</enable_antiwindup>
 
             <!-- Feedforward Control -->
-            <enable_feedforward>false</enable_feedforward>
-            <K_ff>0.025</K_ff>
-            <tau_ff>0.0</tau_ff>
+            <enable_feedforward>$env{ENABLE_FEEDFORWARD}</enable_feedforward>
+            <K_ff>$env{K_FF}</K_ff>
+            <tau_ff>$env{TAU_FF}</tau_ff>
+
 
             <!-- Adaptative feedforward tools -->
-            <enable_adaptative>true</enable_adaptative>
+            <enable_adaptative>false</enable_adaptative>
             <full_payload>true</full_payload>
             <K_ff1>0.03</K_ff1>
             <tau_ff1>0.0</tau_ff1>            <!-- Empty payload in zone 1-->
@@ -88,32 +88,42 @@
             <!-- Consejo: Seleccione "AdaptativeFriction" para el modelo de friaccion-->
 
             <!-- Reference filter -->
-            <enable_referencefilter>false</enable_referencefilter>
-            <tau_f>0.5</tau_f>
-            <n_f>1</n_f>
+            <enable_referencefilter>$env{ENABLE_REFERENCEFILTER}</enable_referencefilter>
+            <tau_f>$env{TAU_F}</tau_f>
+            <n_f>$env{N_F}</n_f>
 
             <!-- Params for simulation. Real values of Husky Motor -->
             <!-- <I_MAX>6.1</I_MAX>
             <V>0.0</V><W>0</W>
             <max_torque>8</max_torque> -->
 
-            <I_MAX>30</I_MAX>
+            <I_MAX>400</I_MAX>
             <V>0.0</V>
             <W>0</W>
-            <max_torque>25</max_torque>
+            <max_torque>$env{MAX_TORQUE}</max_torque>
 
         </controller>
 
     </dynamics>
 
     <!-- Friction force simulation -->
-    <friction class="AdaptativeFriction">
-        <zones>
-            <zone name="Solid Sand" mu="0.5" C_damping="1.0" Crr="0.05" x_min="2.0" x_max="24.7" y_min="1.09" y_max="12.7"/>
-            <zone name="Cement" mu="0.9" C_damping="0.75" Crr="0.01" x_min="2.0" x_max="24.7" y_min="12.7" y_max="15.0"/>
-            <zone name="Slim Sand" mu="0.2" C_damping="1.25" Crr="0.10" x_min="2" x_max="24.7" y_min="15" y_max="21.6"/>
-        </zones>
-    </friction>
+    <if condition="$f{USE_ADAP_FRICTION}">
+        <friction class="AdaptativeFriction">
+            <zones>
+                <zone name="Solid Sand" mu="0.5" C_damping="1.0" Crr="0.05" x_min="2.0" x_max="24.7" y_min="1.09" y_max="12.7"/>
+                <zone name="Cement" mu="0.9" C_damping="0.75" Crr="0.01" x_min="2.0" x_max="24.7" y_min="12.7" y_max="15.0"/>
+                <zone name="Slim Sand" mu="0.2" C_damping="1.25" Crr="0.10" x_min="2" x_max="24.7" y_min="15" y_max="21.6"/>
+            </zones>
+        </friction>
+    </if>
+
+    <if condition="$f{not(USE_ADAP_FRICTION)}">
+        <friction class="default">
+            <mu>0.2</mu>
+            <C_damping>1.25</C_damping>
+            <Crr>0.02</Crr>
+        </friction>
+    </if>
 
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->

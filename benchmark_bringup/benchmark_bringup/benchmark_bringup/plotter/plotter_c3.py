@@ -1,604 +1,805 @@
+# +-------------------------------------------------------------------------+
+# | Benchmark control simulator |
+# | |
+# | Copyright (C) 2025 Fernando Cañadas Aránega |
+# | PhD Student University of Almería, Spain |
+# | Contact: fernando.ca@ual.es |
+# | Distributed under 3-clause BSD License |
+# | See COPYING |
+# | Category 2: PID Control + MPC Control |
+# +-------------------------------------------------------------------------+
+# ---------------------------------------------------------------------------
+# Mid Level Control Plotter - Category 2
+# ---------------------------------------------------------------------------
+
 #!/usr/bin/env python3
 import os
-import math
-import time
 import csv
 from datetime import datetime
 from collections import deque
-
 import rclpy
 from rclpy.node import Node
-
-# --- ROS msgs ---
-from geometry_msgs.msg import PoseWithCovarianceStamped, Twist
+from benchmark_msg.msg import BenchmarkParams
+from geometry_msgs.msg import Twist, PoseWithCovarianceStamped, PoseArray
 from nav_msgs.msg import Path
-from pid_msgs.msg import PidParams
-
-# --- Plotting ---
 import matplotlib
-matplotlib.use('TkAgg')
+
+matplotlib.use("TkAgg")
+matplotlib.rcParams["figure.raise_window"] = False
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import numpy as np
 from matplotlib.gridspec import GridSpec
+from matplotlib.table import Table
+
+# =================== STYLE ===================
+mpl.rcParams.update(
+    {
+        "font.family": "STIXGeneral",
+        "mathtext.fontset": "stix",
+        "font.size": 12,
+        "font.weight": "bold",
+        "axes.labelsize": 13,
+        "axes.labelweight": "bold",
+        "axes.titlesize": 14,
+        "axes.titleweight": "bold",
+        "xtick.labelsize": 11,
+        "ytick.labelsize": 11,
+        "legend.fontsize": 11,
+        "legend.frameon": True,
+        "lines.linewidth": 2.2,
+        "grid.alpha": 0.25,
+    }
+)
+# =============================================
 
 
-def yaw_from_quat(qx, qy, qz, qw):
-    # yaw (Z) from quaternion
-    siny_cosp = 2.0 * (qw*qz + qx*qy)
-    cosy_cosp = 1.0 - 2.0 * (qy*qy + qz*qz)
-    return math.atan2(siny_cosp, cosy_cosp)
-
-def trapz_integral(t, y_abs=None, y=None, weight_time=False):
-    """Integración trapezoidal robusta (usa longitudes coincidentes)."""
-    if len(t) < 2:
-        return 0.0
-    t_arr = np.asarray(t)
-    if y_abs is not None:
-        v = np.asarray(y_abs)
-    elif y is not None:
-        v = np.asarray(y)
-    else:
-        return 0.0
-    if weight_time:
-        v = np.asarray(y_abs) * t_arr[:len(y_abs)]
-    # --- asegurar longitudes iguales ---
-    n = min(len(t_arr), len(v))
-    t_arr = t_arr[-n:]
-    v = v[-n:]
-    return float(np.trapz(v, t_arr))
-
-
-def su_integral(t, u, abs_u=False):
-    """ISU / IAU: maneja diferencias de tamaño."""
-    if len(t) < 2 or len(u) < 2:
-        return 0.0
-    t_arr = np.asarray(t)
-    u_arr = np.asarray(u)
-    n = min(len(t_arr), len(u_arr))
-    t_arr = t_arr[-n:]
-    u_arr = u_arr[-n:]
-    v = np.abs(u_arr) if abs_u else (u_arr ** 2)
-    return float(np.trapz(v, t_arr))
-
-
-def sdu_integral(t, u):
-    """ISDU = ∫ (du/dt)^2 dt con ajuste de longitud."""
-    if len(t) < 3 or len(u) < 3:
-        return 0.0
-    t_arr = np.asarray(t)
-    u_arr = np.asarray(u)
-    n = min(len(t_arr), len(u_arr))
-    t_arr = t_arr[-n:]
-    u_arr = u_arr[-n:]
-    dt = np.diff(t_arr)
-    du = np.diff(u_arr)
-    dt = np.where(dt <= 1e-9, 1e-9, dt)
-    dudt_sq = (du / dt) ** 2
-    return float(np.sum(dudt_sq * dt))
-
-
-
-class PlotterHierarchical(Node):
+class PlotterC3(Node):
     def __init__(self):
-        super().__init__('plotter_hierarchical')
-
-        # ----------------- Buffers PID (para subplots) -----------------
-        maxlen = 5000
-        self.t_pid = deque(maxlen=maxlen)
-        self.sp_vel_l = deque(maxlen=maxlen)
-        self.sp_vel_r = deque(maxlen=maxlen)
-        self.act_vel_l = deque(maxlen=maxlen)
-        self.act_vel_r = deque(maxlen=maxlen)
+        super().__init__("plotter_c2_benchmark")
+        self.MAX_TIME = 80.0
+        maxlen = 15000
+        self.t = deque(maxlen=maxlen)
+        self.sp_l = deque(maxlen=maxlen)
+        self.sp_r = deque(maxlen=maxlen)
+        self.act_l = deque(maxlen=maxlen)
+        self.act_r = deque(maxlen=maxlen)
         self.torque_l = deque(maxlen=maxlen)
         self.torque_r = deque(maxlen=maxlen)
-        self.error_l = deque(maxlen=maxlen)
-        self.error_r = deque(maxlen=maxlen)
-        self.pitch_deg = deque(maxlen=maxlen)
-        self.disturbance = deque(maxlen=maxlen)
-
-        # Flags de PID (condicionales de gráficas)
-        self.enable_antiwindup = False
-        self.enable_feedforward = False
-        self.enable_referencefilter = False
-
-        # ----------------- Históricos para índices (3 niveles) -----------------
-        # Usamos un reloj común a 10 Hz (timer plot) para muestrear señales
-        self.t_hist = deque(maxlen=maxlen)
-
-        # High-level
-        self.e_high = deque(maxlen=maxlen)   # error pos (m)
-        self.u_high = deque(maxlen=maxlen)   # |cmd_vel_nav| (magnitude)
-
-        # Mid-level
-        self.e_mid = deque(maxlen=maxlen)    # |cmd_vel_nav - cmd_vel|
-        self.u_mid = deque(maxlen=maxlen)    # |cmd_vel|
-
-        # Low-level
-        self.e_low = deque(maxlen=maxlen)    # avg error wheels
-        self.u_low = deque(maxlen=maxlen)    # avg torque (signed)
-
-        # ----------------- Estado "último valor" de cada topic -----------------
+        self.err_l = deque(maxlen=maxlen)
+        self.err_r = deque(maxlen=maxlen)
+        self.v_cmd = deque(maxlen=maxlen)
+        self.w_cmd = deque(maxlen=maxlen)
+        self.x = deque(maxlen=maxlen)
+        self.y = deque(maxlen=maxlen)
+        self.ref_x, self.ref_y = [], []
+        self.teb_x, self.teb_y = [], []
+        self.ref_near_x = deque(maxlen=maxlen)
+        self.ref_near_y = deque(maxlen=maxlen)
+        self.teb_near_x = deque(maxlen=maxlen)
+        self.teb_near_y = deque(maxlen=maxlen)
+        self.err_pred_x = deque(maxlen=maxlen)
+        self.err_pred_y = deque(maxlen=maxlen)
+        self.err_teb_ref = deque(maxlen=maxlen)
+        self.theta_x = []
+        self.theta_y = []
+        self.theta_err = deque(maxlen=maxlen)
+        self.pitch = deque(maxlen=maxlen)
+        self.sector = deque(maxlen=maxlen)
+        self.current_sector = 1
         self.start_time = None
-        self.lock = False  # bloqueo ligero para evitar reentrada en callbacks simultáneos
+        self.last_msg = None
+        self.create_subscription(
+            BenchmarkParams, "/benchmark_params", self.cb_benchmark, 50
+        )
+        self.create_subscription(
+            PoseWithCovarianceStamped, "/amcl_pose", self.cb_amcl, 20
+        )
+        self.create_subscription(Path, "/global_plan", self.cb_global_plan, 10)
+        self.create_subscription(PoseArray, "/teb_poses", self.cb_teb, 10)
+        self.create_subscription(Twist, "/cmd_vel_nav", self.cb_cmd, 20)
+        self.create_subscription(Path, "/plan", self.cb_theta, 10)
 
-        # AMCL pose
-        self.amcl_ok = False
-        self.amcl_x = 0.0
-        self.amcl_y = 0.0
-        self.amcl_yaw = 0.0
-
-        # Goal pose (desde /received_global_plan como PoseStamped)
-        self.goal_ok = False
-        self.goal_x = 0.0
-        self.goal_y = 0.0
-        self.goal_yaw = 0.0
-
-        # Twists
-        self.nav_ok = False
-        self.nav_v = 0.0
-        self.nav_w = 0.0
-
-        self.cmd_ok = False
-        self.cmd_v = 0.0
-        self.cmd_w = 0.0
-
-        # PID params (errores/torques/pitch/disturbance)
-        self.pid_ok = False
-        self.last_err_l = 0.0
-        self.last_err_r = 0.0
-        self.last_torque_l = 0.0
-        self.last_torque_r = 0.0
-        self.last_pitch_deg = 0.0
-        self.last_disturbance = 0.0
-
-        # ----------------- Suscripciones -----------------
-        self.sub_pid = self.create_subscription(PidParams, '/pid_params', self.cb_pid, 30)
-        self.sub_amcl = self.create_subscription(PoseWithCovarianceStamped, '/amcl_pose', self.cb_amcl, 10)
-        self.sub_goal = self.create_subscription(Path, '/received_global_plan', self.cb_goal_path, 10)
-        self.sub_nav = self.create_subscription(Twist, '/cmd_vel_nav', self.cb_cmd_vel_nav, 20)
-        self.sub_cmd = self.create_subscription(Twist, '/cmd_vel', self.cb_cmd_vel, 50)
-
-        self.get_logger().info("✅ Subscribed to: /pid_params, /amcl_pose, /received_global_plan, /cmd_vel_nav, /cmd_vel")
-
-        # ----------------- Plot init (4 subplots + panel de métricas) -----------------
+        # ================= FIGURE 1 =================
+        self.timer_plot = self.create_timer(1.0, self.update_plot)
         plt.ion()
-        self.fig = plt.figure(figsize=(13.5, 8.5), tight_layout=True)
+        self.fig1 = plt.figure(figsize=(17, 10))
+        gs1 = GridSpec(4, 2, width_ratios=[3.6, 1.4], figure=self.fig1)
+        self.ax1_L = self.fig1.add_subplot(gs1[0, 0])
+        self.ax1_R = self.fig1.add_subplot(gs1[1, 0])
+        self.ax2 = self.fig1.add_subplot(gs1[2, 0])
+        self.ax2r = None
+        self.ax3 = self.fig1.add_subplot(gs1[3, 0])
+        self.ax3r = None
+        self.ax_table1 = self.fig1.add_subplot(gs1[:, 1])
+        self.ax_table1.axis("off")
+        # ================= FIGURE 2 =================
+        self.fig2 = plt.figure(figsize=(17, 10))
+        gs2 = GridSpec(3, 2, width_ratios=[3.6, 1.4], figure=self.fig2)
+        self.ax_xy = self.fig2.add_subplot(gs2[0, 0])
+        self.ax_vw = self.fig2.add_subplot(gs2[1, 0])
+        self.ax_vw_r = self.ax_vw.twinx()
+        self.ax_err = self.fig2.add_subplot(gs2[2, 0])
+        self.ax_table2 = self.fig2.add_subplot(gs2[:, 1])
+        self.ax_table2.axis("off")
+        # ================= FIGURE 3 =================
+        self.fig3 = plt.figure(figsize=(17, 10))
+        gs3 = GridSpec(2, 2, width_ratios=[3.6, 1.4], figure=self.fig3)
+        self.ax_theta_traj = self.fig3.add_subplot(gs3[0, 0])
+        self.ax_theta_err = self.fig3.add_subplot(gs3[1, 0])
+        self.ax_table3 = self.fig3.add_subplot(gs3[:, 1])
+        self.ax_table3.axis("off")
+        self.table3_text = None
 
-        # Columna izquierda 4 subgráficas; derecha 1 panel de métricas (3 bloques)
-        gs = GridSpec(4, 2, width_ratios=[3.2, 1.0], figure=self.fig)
-        self.ax = [
-            self.fig.add_subplot(gs[0, 0]),
-            self.fig.add_subplot(gs[1, 0]),
-            self.fig.add_subplot(gs[2, 0]),
-            self.fig.add_subplot(gs[3, 0]),
-        ]
-        self.metrics_ax = self.fig.add_subplot(gs[:, 1])
-        self.metrics_ax.axis("off")
-        self.fig.canvas.manager.set_window_title("Hierarchical Performance – PID/MPC/Planner")
-
-        # Textos de métricas (tres bloques)
-        self.txt = {}
-        y0 = 0.92
-        dy = 0.06
-
-        self.txt['title'] = self.metrics_ax.text(0.05, y0, "Performance Indices", fontsize=14, fontweight="bold")
-
-        # High-level
-        self.metrics_ax.text(0.05, y0 - dy*1.2, "High Level (Planner)", fontsize=12, fontweight="bold", color="#2e7d32")
-        self.txt['H_IAE']  = self.metrics_ax.text(0.05, y0 - dy*2.1, "", fontsize=10, color="#2e7d32")
-        self.txt['H_ISE']  = self.metrics_ax.text(0.05, y0 - dy*2.8, "", fontsize=10, color="#2e7d32")
-        self.txt['H_ITAE'] = self.metrics_ax.text(0.05, y0 - dy*3.5, "", fontsize=10, color="#2e7d32")
-        self.txt['H_ISU']  = self.metrics_ax.text(0.05, y0 - dy*4.2, "", fontsize=10, color="#2e7d32")
-        self.txt['H_IAU']  = self.metrics_ax.text(0.05, y0 - dy*4.9, "", fontsize=10, color="#2e7d32")
-        self.txt['H_ISDU'] = self.metrics_ax.text(0.05, y0 - dy*5.6, "", fontsize=10, color="#2e7d32")
-
-        # Mid-level
-        base2 = y0 - dy*6.8
-        self.metrics_ax.text(0.05, base2, "Mid Level (MPC)", fontsize=12, fontweight="bold", color="#f9a825")
-        self.txt['M_IAE']  = self.metrics_ax.text(0.05, base2 - dy*0.9, "", fontsize=10, color="#f9a825")
-        self.txt['M_ISE']  = self.metrics_ax.text(0.05, base2 - dy*1.6, "", fontsize=10, color="#f9a825")
-        self.txt['M_ITAE'] = self.metrics_ax.text(0.05, base2 - dy*2.3, "", fontsize=10, color="#f9a825")
-        self.txt['M_ISU']  = self.metrics_ax.text(0.05, base2 - dy*3.0, "", fontsize=10, color="#f9a825")
-        self.txt['M_IAU']  = self.metrics_ax.text(0.05, base2 - dy*3.7, "", fontsize=10, color="#f9a825")
-        self.txt['M_ISDU'] = self.metrics_ax.text(0.05, base2 - dy*4.4, "", fontsize=10, color="#f9a825")
-
-        # Low-level
-        base3 = y0 - dy*11.2
-        self.metrics_ax.text(0.05, base3, "Low Level (PID)", fontsize=12, fontweight="bold", color="#1565c0")
-        self.txt['L_IAE']  = self.metrics_ax.text(0.05, base3 - dy*0.9, "", fontsize=10, color="#1565c0")
-        self.txt['L_ISE']  = self.metrics_ax.text(0.05, base3 - dy*1.6, "", fontsize=10, color="#1565c0")
-        self.txt['L_ITAE'] = self.metrics_ax.text(0.05, base3 - dy*2.3, "", fontsize=10, color="#1565c0")
-        self.txt['L_ISU']  = self.metrics_ax.text(0.05, base3 - dy*3.0, "", fontsize=10, color="#1565c0")
-        self.txt['L_IAU']  = self.metrics_ax.text(0.05, base3 - dy*3.7, "", fontsize=10, color="#1565c0")
-        self.txt['L_ISDU'] = self.metrics_ax.text(0.05, base3 - dy*4.4, "", fontsize=10, color="#1565c0")
-
-        # Timers
-        self.timer_plot = self.create_timer(0.10, self.update_plot)      # 10 Hz: refresco subplots y muestreo señales
-        self.timer_metrics = self.create_timer(2.5, self.update_metrics)  # 2.5 s: actualización texto métricas
-
-    # --------------------------- Callbacks topics ---------------------------
-    def _now_rel(self):
-        t_sec = self.get_clock().now().nanoseconds * 1e-9
+    def now(self):
+        t = self.get_clock().now().nanoseconds * 1e-9
         if self.start_time is None:
-            self.start_time = t_sec
-        return t_sec - self.start_time
+            self.start_time = t
+        return t - self.start_time
 
-    def cb_pid(self, msg: PidParams):
-        if self.lock: return
-        self.lock = True
-        try:
-            t = self._now_rel()
+    def cb_benchmark(self, msg: BenchmarkParams):
 
-            # buffers de subplot (dependen de PID)
-            self.t_pid.append(t)
-            self.sp_vel_l.append(msg.sp_vel_l)
-            self.sp_vel_r.append(msg.sp_vel_r)
-            self.act_vel_l.append(msg.act_vel_l)
-            self.act_vel_r.append(msg.act_vel_r)
-            self.torque_l.append(msg.torque_l)
-            self.torque_r.append(msg.torque_r)
-            self.error_l.append(msg.error_l)
-            self.error_r.append(msg.error_r)
-            self.pitch_deg.append(math.degrees(msg.pitch))
-            self.disturbance.append(msg.torque_slope)
+        t = self.now()
+        if t >= self.MAX_TIME:
+            return
+        self.last_msg = msg
+        self.t.append(t)
+        self.sp_l.append(msg.sp_vel_l)
+        self.sp_r.append(msg.sp_vel_r)
+        self.act_l.append(msg.act_vel_l)
+        self.act_r.append(msg.act_vel_r)
+        self.torque_l.append(msg.torque_l)
+        self.torque_r.append(msg.torque_r)
+        self.err_l.append(msg.error_l)
+        self.err_r.append(msg.error_r)
+        if hasattr(msg, "pitch"):
+            pitch_deg = np.degrees(msg.pitch)
+        else:
+            pitch_deg = 0.0
+            self.pitch.append(pitch_deg)
 
-            # flags (para condicional de gráficas)
-            self.enable_antiwindup = msg.enable_antiwindup
-            self.enable_feedforward = msg.enable_feedforward
-            self.enable_referencefilter = msg.enable_referencefilter
+        if (
+            hasattr(msg, "mu")
+            and hasattr(msg, "mu_zone1")
+            and hasattr(msg, "mu_zone2")
+            and hasattr(msg, "mu_zone3")
+        ):
+            if msg.mu >= msg.mu_zone1:
+                self.current_sector = 1
+            if msg.mu >= msg.mu_zone2:
+                self.current_sector = 2
+            if msg.mu <= msg.mu_zone3:
+                self.current_sector = 3
+            self.sector.append(self.current_sector)
+        if self.x and self.y:
+            xr = self.x[-1]
+            yr = self.y[-1]
+        else:
+            xr = np.nan
+            yr = np.nan
 
-            # ultimo estado (para muestreo a 10Hz de índices)
-            self.pid_ok = True
-            self.last_err_l = msg.error_l
-            self.last_err_r = msg.error_r
-            self.last_torque_l = msg.torque_l
-            self.last_torque_r = msg.torque_r
-            self.last_pitch_deg = math.degrees(msg.pitch)
-            self.last_disturbance = msg.torque_slope
-        finally:
-            self.lock = False
+        if self.ref_x and self.ref_y and not np.isnan(xr):
+            ref_x_arr = np.array(self.ref_x)
+            ref_y_arr = np.array(self.ref_y)
+            d_ref = (ref_x_arr - xr) ** 2 + (ref_y_arr - yr) ** 2
+            idx_ref = int(np.argmin(d_ref))
+            self.ref_near_x.append(float(ref_x_arr[idx_ref]))
+            self.ref_near_y.append(float(ref_y_arr[idx_ref]))
+        else:
+            self.ref_near_x.append(np.nan)
+            self.ref_near_y.append(np.nan)
+
+        if self.teb_x and self.teb_y and not np.isnan(xr):
+            teb_x_arr = np.array(self.teb_x)
+            teb_y_arr = np.array(self.teb_y)
+            d_teb = (teb_x_arr - xr) ** 2 + (teb_y_arr - yr) ** 2
+            idx_teb = int(np.argmin(d_teb))
+            self.teb_near_x.append(float(teb_x_arr[idx_teb]))
+            self.teb_near_y.append(float(teb_y_arr[idx_teb]))
+        else:
+            self.teb_near_x.append(np.nan)
+            self.teb_near_y.append(np.nan)
+
+        if self.ref_x and self.ref_y and self.teb_x and self.teb_y:
+            ref_x_arr = np.array(self.ref_x)
+            ref_y_arr = np.array(self.ref_y)
+            teb_x_arr = np.array(self.teb_x)
+            teb_y_arr = np.array(self.teb_y)
+            n = min(len(ref_x_arr), len(teb_x_arr))
+            if n > 0:
+                dx = ref_x_arr[:n] - teb_x_arr[:n]
+                dy = ref_y_arr[:n] - teb_y_arr[:n]
+                dist = np.sqrt(dx**2 + dy**2)
+                e_mean = float(np.mean(dist))
+            else:
+                e_mean = 0.0
+        else:
+            e_mean = 0.0
+        self.err_teb_ref.append(e_mean)
+
+        if self.theta_x and self.theta_y and self.x and self.y:
+            xr = self.x[-1]
+            yr = self.y[-1]
+            th_x = np.array(self.theta_x)
+            th_y = np.array(self.theta_y)
+            dx = th_x - xr
+            dy = th_y - yr
+            dist = np.sqrt(dx**2 + dy**2)
+            e_theta = float(np.min(dist))
+        else:
+            e_theta = 0.0
+
+        self.theta_err.append(e_theta)
+
+    def cb_cmd(self, msg: Twist):
+        self.v_cmd.append(msg.linear.x)
+        self.w_cmd.append(msg.angular.z)
 
     def cb_amcl(self, msg: PoseWithCovarianceStamped):
-        p = msg.pose.pose.position
-        q = msg.pose.pose.orientation
-        self.amcl_x = p.x
-        self.amcl_y = p.y
-        self.amcl_yaw = yaw_from_quat(q.x, q.y, q.z, q.w)
-        self.amcl_ok = True
+        self.x.append(msg.pose.pose.position.x)
+        self.y.append(msg.pose.pose.position.y)
 
-    def cb_goal_path(self, msg: Path):
-        """Extrae el último punto del plan global como objetivo."""
-        if len(msg.poses) == 0:
-            return
-        p_last = msg.poses[-1].pose.position
-        q_last = msg.poses[-1].pose.orientation
-        self.goal_x = p_last.x
-        self.goal_y = p_last.y
-        self.goal_yaw = yaw_from_quat(q_last.x, q_last.y, q_last.z, q_last.w)
-        self.goal_ok = True
+    def cb_global_plan(self, msg: Path):
+        self.ref_x = [p.pose.position.x for p in msg.poses]
+        self.ref_y = [p.pose.position.y for p in msg.poses]
 
-    def cb_cmd_vel_nav(self, msg: Twist):
-        self.nav_v = msg.linear.x
-        self.nav_w = msg.angular.z
-        self.nav_ok = True
+    def cb_teb(self, msg: PoseArray):
+        self.teb_x = [p.position.x for p in msg.poses]
+        self.teb_y = [p.position.y for p in msg.poses]
 
-    def cb_cmd_vel(self, msg: Twist):
-        self.cmd_v = msg.linear.x
-        self.cmd_w = msg.angular.z
-        self.cmd_ok = True
+    def cb_theta(self, msg: Path):
+        self.theta_x = [p.pose.position.x for p in msg.poses]
+        self.theta_y = [p.pose.position.y for p in msg.poses]
 
-    # --------------------------- Muestreo + Plot ---------------------------
-    def sample_signals_for_indices(self, t_now):
-        """
-        Muestrea y almacena señales para integrar índices (tres niveles).
-        Llamado a 10 Hz desde update_plot().
-        """
-        # Sólo avanzamos tiempo si al menos tenemos PID (para tener referencia de reloj)
-        # Pero igualmente añadimos t_now siempre; y para señales que no existan aún, no agregamos muestra.
-        self.t_hist.append(t_now)
+    # --------------------- INDICES ---------------------
+    def compute_indices_wheels(self):
+        if len(self.t) < 2:
+            return 0.0, 0.0, 0.0
+        t = np.array(self.t)
+        e = 0.5 * (np.array(self.err_l) + np.array(self.err_r))
+        u = 0.5 * (np.array(self.torque_l) + np.array(self.torque_r))
+        W_MAX = 3.2
+        T_MAX = 20.0
+        e_norm = np.abs(e) / W_MAX
+        u_norm = np.abs(u) / T_MAX
+        SAE1 = float(np.trapz(e_norm, t))
+        SCI1 = float(np.trapz(u_norm, t))
+        J1 = SAE1 + SCI1
+        return SAE1, SCI1, J1
 
-        # High-level: error = distancia amcl -> goal; u = |cmd_vel_nav|
-        if self.amcl_ok and self.goal_ok:
-            eH = math.hypot(self.goal_x - self.amcl_x, self.goal_y - self.amcl_y)
-            self.e_high.append(eH)
-        # Entrada high (si hay cmd_vel_nav)
-        if self.nav_ok:
-            uH = math.hypot(self.nav_v, self.nav_w)
-            self.u_high.append(uH)
+    def compute_indices_teb_ref(self):
+        if (
+            len(self.t) < 2
+            or len(self.err_teb_ref) < 2
+            or len(self.v_cmd) < 2
+            or len(self.w_cmd) < 2
+        ):
+            return 0.0, 0.0, 0.0
 
-        # Mid-level: error = |cmd_vel_nav - cmd_vel|; u = |cmd_vel|
-        if self.nav_ok and self.cmd_ok:
-            eM = math.hypot(self.nav_v - self.cmd_v, self.nav_w - self.cmd_w)
-            self.e_mid.append(eM)
-        if self.cmd_ok:
-            uM = math.hypot(self.cmd_v, self.cmd_w)
-            self.u_mid.append(uM)
+        n = min(len(self.t), len(self.err_teb_ref), len(self.v_cmd), len(self.w_cmd))
+        t_arr = np.array(list(self.t)[-n:])
+        e_path = np.array(list(self.err_teb_ref)[-n:])
+        v_arr = np.array(list(self.v_cmd)[-n:])
+        w_arr = np.array(list(self.w_cmd)[-n:])
+        SAE2 = float(np.trapz(np.abs(e_path), t_arr))
+        V_MAX = 0.75
+        W_MAX = 3.2
+        ev_norm = np.abs(v_arr) / V_MAX
+        ew_norm = np.abs(w_arr) / W_MAX
+        u_norm = 0.5 * (ev_norm + ew_norm)
+        SCI2 = float(np.trapz(u_norm, t_arr))
+        J2 = SAE2 + SCI2
+        return SAE2, SCI2, J2
 
-        # Low-level: error = avg(error_l, error_r); u = avg torque (signed)
-        if self.pid_ok:
-            eL = 0.5 * (self.last_err_l + self.last_err_r)
-            uL = 0.5 * (self.last_torque_l + self.last_torque_r)
-            self.e_low.append(eL)
-            self.u_low.append(uL)
+    def compute_indices_theta(self):
+        if len(self.t) < 2 or len(self.theta_err) < 2 or len(self.theta_x) < 2:
+            return 0.0, 0.0, 0.0, 0.0
+        n = min(len(self.t), len(self.theta_err))
+        t_arr = np.array(list(self.t)[-n:])
+        e_th_arr = np.array(list(self.theta_err)[-n:])
+        SAE3 = float(np.trapz(np.abs(e_th_arr), t_arr))
+        th_x = np.array(self.theta_x, dtype=float)
+        th_y = np.array(self.theta_y, dtype=float)
+        if th_x.size < 2:
+            return SAE3, 0.0, SAE3, 0.0
+        seg = np.sqrt(np.diff(th_x) ** 2 + np.diff(th_y) ** 2)
+        path_len = float(np.sum(seg))
+        W_EUC = 1.0
+        W_TRAV = 2.0
+        L_MAX = 50.0
+        C_total = (W_EUC + W_TRAV) * path_len
+        C_max = (W_EUC + W_TRAV) * L_MAX
+        if C_max > 0.0:
+            SCI3 = C_total / C_max
+        if SCI3 > 1.0:
+            SCI3 = 1.0  # saturación
+        else:
+            SCI3 = 0.0
+        J3 = SAE3 + SCI3
+        return SAE3, SCI3, J3, path_len
 
-        # Limitar tamaños si alguna lista crece más que t_hist (por señales ausentes)
-        for q in [self.e_high, self.u_high, self.e_mid, self.u_mid, self.e_low, self.u_low]:
-            while len(q) > len(self.t_hist):
-                q.popleft()
+    # --------------------- TABLAS ---------------------
+    def draw_table_fig1(self, SAE1, SCI1, J1):
+        self.ax_table1.cla()
+        self.ax_table1.axis("off")
+        rows = [("Control Params", "Values")]
+        if self.last_msg is not None:
+            rows.extend(
+                [
+                    (
+                        "Kp",
+                        (
+                            f"{getattr(self.last_msg, 'kp', float('nan')):.2f}"
+                            if hasattr(self.last_msg, "kp")
+                            else "-"
+                        ),
+                    ),
+                    (
+                        "Ki",
+                        (
+                            f"{getattr(self.last_msg, 'ki', float('nan')):.2f}"
+                            if hasattr(self.last_msg, "ki")
+                            else "-"
+                        ),
+                    ),
+                    (
+                        "Kd",
+                        (
+                            f"{getattr(self.last_msg, 'kd', float('nan')):.2f}"
+                            if hasattr(self.last_msg, "kd")
+                            else "-"
+                        ),
+                    ),
+                    (
+                        "N",
+                        (
+                            f"{getattr(self.last_msg, 'n', float('nan')):.1f}"
+                            if hasattr(self.last_msg, "n")
+                            else "-"
+                        ),
+                    ),
+                    (
+                        "Feedforward",
+                        (
+                            "ON"
+                            if getattr(self.last_msg, "enable_feedforward", False)
+                            else "OFF"
+                        ),
+                    ),
+                    (
+                        "Anti-windup",
+                        (
+                            "ON"
+                            if getattr(self.last_msg, "enable_antiwindup", False)
+                            else "OFF"
+                        ),
+                    ),
+                    (
+                        "Ref. filter",
+                        (
+                            "ON"
+                            if getattr(self.last_msg, "enable_referencefilter", False)
+                            else "OFF"
+                        ),
+                    ),
+                ]
+            )
+        else:
+            rows.extend(
+                [
+                    ("Kp", "-"),
+                    ("Ki", "-"),
+                    ("Kd", "-"),
+                    ("N", "-"),
+                    ("Feedforward", "-"),
+                    ("Anti-windup", "-"),
+                    ("Ref. filter", "-"),
+                ]
+            )
+
+        rows.append(("Performance Index", "Real value"))
+        rows.extend(
+            [
+                (r"$SAE_1$", f"{SAE1:.4f}"),
+                (r"$SCI_1$", f"{SCI1:.4f}"),
+                (r"J1 = $SAE_1$ + $SCI_1$", f"{J1:.4f}"),
+            ]
+        )
+        table = Table(self.ax_table1, bbox=[0.05, 0.08, 0.9, 0.84])
+        h = 0.07
+        for i, (k, v) in enumerate(rows):
+            for j, txt in enumerate([k, v]):
+                cell = table.add_cell(
+                    i,
+                    j,
+                    width=[0.6, 0.3][j],
+                    height=h,
+                    text=txt,
+                    loc="left" if j == 0 else "right",
+                )
+                cell.set_edgecolor("#CCCCCC")
+                cell.set_linewidth(0.8)
+                cell.set_fontsize(11)
+                cell.PAD = 0.18
+                if i in (0, 8):
+                    cell.set_text_props(weight="bold")
+                else:
+                    cell.set_text_props(weight="normal")
+        self.ax_table1.add_table(table)
+
+    def draw_table_fig2(self, SAE1, SCI1, J1, SAE2, SCI2, J2):
+        self.ax_table2.cla()
+        self.ax_table2.axis("off")
+        V_MAX = 0.75
+        W_MAX = 3.2
+        J = J1 + J2
+        rows = [
+            ("Params", "Values"),
+            (r"$v_{max}$ [m/s]", f"{V_MAX:.2f}"),
+            (r"$ω_{max}$ [rad/s]", f"{W_MAX:.2f}"),
+            (r"$d_{obst}$ [m]", "0.4"),
+            ("Low level Index", ""),
+            (r"$SAE_1$", f"{SAE1:.4f}"),
+            (r"$SCI_1$", f"{SCI1:.4f}"),
+            (r"J1 = $SAE_1$ + $SCI_1$", f"{J1:.4f}"),
+            ("Mid level Index", ""),
+            (r"$SAE_2$", f"{SAE2:.4f}"),
+            (r"$SCI_2$", f"{SCI2:.4f}"),
+            (r"J2 = $SAE_2$ + $SCI_2$", f"{J2:.4f}"),
+            (r"J=$\frac{1}{2}$(J1 + J2)", f"{J:.4f}"),
+        ]
+        table = Table(self.ax_table2, bbox=[0.05, 0.08, 0.9, 0.84])
+        h = 0.06
+        for i, (k, v) in enumerate(rows):
+            for j, txt in enumerate([k, v]):
+                cell = table.add_cell(
+                    i,
+                    j,
+                    width=[0.6, 0.3][j],
+                    height=h,
+                    text=txt,
+                    loc="left" if j == 0 else "right",
+                )
+                cell.set_edgecolor("#CCCCCC")
+                cell.set_linewidth(0.8)
+                cell.set_fontsize(11)
+                cell.PAD = 0.18
+                if i in (0, 4, 8):
+                    cell.set_text_props(weight="bold")
+                else:
+                    cell.set_text_props(weight="normal")
+        self.ax_table2.add_table(table)
+
+    def draw_table_fig3(self, SAE1, SCI1, J1, SAE2, SCI2, J2, SAE3, SCI3, J3):
+        self.ax_table3.cla()
+        self.ax_table3.axis("off")
+        J3 = J1 + J2 + J3
+        rows = [
+            ("Low level Index", ""),
+            (r"$SAE_1$", f"{SAE1:.4f}"),
+            (r"$SCI_1$", f"{SCI1:.4f}"),
+            (r"J1 = $SAE_1$ + $SCI_1$", f"{J1:.4f}"),
+            ("Mid level Index", ""),
+            (r"$SAE_2$", f"{SAE2:.4f}"),
+            (r"$SCI_2$", f"{SCI2:.4f}"),
+            (r"J2 = $SAE_2$ + $SCI_2$", f"{J2:.4f}"),
+            ("High level Index", ""),
+            (r"$SAE_3$", f"{SAE3:.4f}"),
+            (r"$SCI_3$", f"{SCI3:.4f}"),
+            (r"J3 = $SAE_3$ + $SCI_3$", f"{J3:.4f}"),
+            (r"J=$\frac{1}{3}$(J1 + J2 + J3)", f"{J3:.4f}"),
+        ]
+        table = Table(self.ax_table3, bbox=[0.05, 0.08, 0.9, 0.84])
+        h = 0.07
+        for i, (k, v) in enumerate(rows):
+            for j, txt in enumerate([k, v]):
+                cell = table.add_cell(
+                    i,
+                    j,
+                    width=[0.7, 0.3][j],
+                    height=h,
+                    text=txt,
+                    loc="left" if j == 0 else "right",
+                )
+                cell.set_edgecolor("#CCCCCC")
+                cell.set_linewidth(0.8)
+                cell.set_fontsize(11)
+                cell.PAD = 0.18
+                if i in (0, 4, 8):
+                    cell.set_text_props(weight="bold")
+                else:
+                    cell.set_text_props(weight="normal")
+        self.ax_table3.add_table(table)
 
     def update_plot(self):
-        if self.lock:
+        if self.t and self.t[-1] >= self.MAX_TIME:
             return
-        self.lock = True
-        try:
-            # Muestreo de señales para índices a 10Hz
-            t = self._now_rel()
-            self.sample_signals_for_indices(t)
+        if len(self.t) < 2:
+            return
+        # Figure 1
+        self.ax1_L.cla()
+        self.ax1_L.set_title(
+            "Figure 1, Category 3: Low Level Control. Angular Velocities of Left and Right Wheels (PID)"
+        )
+        self.ax1_L.plot(self.t, self.sp_l, color="#d62728", label=r"sp $\omega_L$")
+        self.ax1_L.plot(self.t, self.act_l, "--", color="#2c41a0", label=r"$\omega_L$")
+        self.ax1_L.set_ylabel(r"Left $\omega$ [rad/s]")
+        self.ax1_L.legend()
+        self.ax1_L.grid(True)
 
-            # Si no hay suficientes puntos para graficar PID, salimos
-            if len(self.t_pid) < 2:
-                return
+        self.ax1_R.cla()
+        self.ax1_R.plot(self.t, self.sp_r, color="#af1fb4", label=r"sp $\omega_R$")
+        self.ax1_R.plot(self.t, self.act_r, "--", color="#0ee3ff", label=r"$\omega_R$")
+        self.ax1_R.set_ylabel(r"Right $\omega$ [rad/s]")
+        self.ax1_R.legend()
+        self.ax1_R.grid(True)
 
-            # Limpia todos los ejes
-            for ax in self.ax:
-                ax.clear()
+        self.ax2.cla()
+        self.ax2.plot(self.t, self.torque_l, color="#67bd72", label=r"$\tau_L$")
+        self.ax2.plot(self.t, self.torque_r, "--", color="#a06a2cff", label=r"$\tau_R$")
+        self.ax2.set_ylabel(r"Torque [$\tau$] [Nm]")
+        self.ax2.grid(True)
+        self.ax2.legend()
 
-            # 1) Angular velocity
-            self.ax[0].plot(self.t_pid, self.sp_vel_l, 'r-', label='SP L')
-            self.ax[0].plot(self.t_pid, self.act_vel_l, 'r--', label='ACT L')
-            self.ax[0].plot(self.t_pid, self.sp_vel_r, 'b-', label='SP R')
-            self.ax[0].plot(self.t_pid, self.act_vel_r, 'b--', label='ACT R')
-            self.ax[0].set_ylabel("Angular velocity (ω) [rad/s]")
-            self.ax[0].legend(fontsize=8)
-            self.ax[0].grid(True, alpha=0.3)
+        if self.ax3r is not None:
+            self.ax3r.remove()
+        self.ax3r = self.ax3.twinx()
+        ax3r = self.ax3.twinx()
 
-            # 2) Input torque
-            self.ax[1].plot(self.t_pid, self.torque_l, 'r-', label='Torque L')
-            self.ax[1].plot(self.t_pid, self.torque_r, 'b-', label='Torque R')
-            self.ax[1].set_ylabel("Input torque [Nm]")
-            self.ax[1].legend(fontsize=8)
-            self.ax[1].grid(True, alpha=0.3)
+        if self.pitch or self.sector:
+            n = min(
+                len(self.t),
+                len(self.pitch) if self.pitch else len(self.t),
+                len(self.sector) if self.sector else len(self.t),
+            )
+        t_plot = list(self.t)[-n:]
 
-            # 3) Error
-            self.ax[2].plot(self.t_pid, self.error_l, 'r-', label='Error L')
-            self.ax[2].plot(self.t_pid, self.error_r, 'b-', label='Error R')
-            self.ax[2].set_ylabel("Error ω [rad/s]")
-            self.ax[2].legend(fontsize=8)
-            self.ax[2].grid(True, alpha=0.3)
-            if not self.enable_feedforward:
-                self.ax[2].set_xlabel("Time [s]")
+        if self.pitch:
+            self.ax3.plot(t_plot, list(self.pitch)[-n:], color="#08519c", label="Slope")
+            self.ax3.set_ylabel("Slope [°]")
 
-            # 4) Condicional (feedforward): Pitch & Disturbance
-            if self.enable_feedforward:
-                self.ax[3].plot(self.t_pid, self.pitch_deg, 'g-', label='Inclination [°]')
-                self.ax[3].plot(self.t_pid, self.disturbance, 'm-', label='Disturbance torque [Nm]')
-                self.ax[3].set_ylabel("Inclination [°] / Disturbance [Nm]")
-                self.ax[3].set_xlabel("Time [s]")
-                self.ax[3].legend(fontsize=8)
-                self.ax[3].grid(True, alpha=0.3)
-            else:
-                # Si no hay feedforward, mostramos sólo pitch en el 4º panel por continuidad visual
-                self.ax[3].plot(self.t_pid, self.pitch_deg, 'g-', label='Inclination [°]')
-                self.ax[3].set_ylabel("Inclination [°]")
-                self.ax[3].set_xlabel("Time [s]")
-                self.ax[3].legend(fontsize=8)
-                self.ax[3].grid(True, alpha=0.3)
+        if self.sector:
+            ax3r.step(
+                t_plot,
+                list(self.sector)[-n:],
+                where="post",
+                linestyle="-",
+                linewidth=2.5,
+                color="#a50f15",
+                label="Terrain sector",
+            )
+            ax3r.set_ylabel("Sector")
+            ax3r.set_yticks([1, 2, 3])
+            ax3r.set_yticklabels(["S1", "S2", "S3"])
+        self.ax3.set_xlabel("Time [s]")
+        self.ax3.grid(True)
 
-            self.fig.tight_layout(rect=[0, 0, 0.80, 1.0])  # dejar espacio a la derecha
-            self.fig.canvas.draw()
-            self.fig.canvas.flush_events()
-        finally:
-            self.lock = False
+        lines3 = self.ax3.get_lines() + ax3r.get_lines()
+        labels3 = [l.get_label() for l in lines3]
+        if lines3:
+            self.ax3.legend(lines3, labels3, loc="upper left")
 
-    # --------------------------- Métricas (cada 2.5s) ---------------------------
-    def compute_all_indices(self):
-        """
-        Calcula todos los índices (IAE, ISE, ITAE, ISU, IAU, ISDU, MSAE, MSIC, J)
-        para los tres niveles: Planner (High), MPC (Mid) y PID (Low).
-        Incluye normalización física de errores y entradas.
-        """
+        SAE1, SCI1, J1 = self.compute_indices_wheels()
+        if self.last_msg is not None:
+            self.draw_table_fig1(SAE1, SCI1, J1)
+        self.fig1.tight_layout()
+        self.fig1.canvas.draw_idle()
+        self.fig1.canvas.flush_events()
+        plt.pause(0.001)
 
-        # --- Parámetros físicos ---
-        V_MAX = 0.75       # [m/s]
-        W_MAX = 3.5        # [rad/s]
-        E_SCALE_H = 1.0    # [m]   (0.25% de 40 m)
-        T_SCALE_L = 50.0   # [Nm]
-        U_SCALE = math.sqrt(V_MAX**2 + W_MAX**2)  # ~3.58
+        # Figure 2
+        self.ax_xy.cla()
+        if self.x and self.y:
+            xr = self.x[-1]
+            yr = self.y[-1]
+            self.ax_xy.set_title(
+                "Figure 2, Category 3: Mid Level Control. Robot Trajectory (TEB - MPC)"
+            )
+            if self.teb_x and self.teb_y:
+                self.ax_xy.plot(
+                    self.teb_x, self.teb_y, color="#2ca02c", label="TEB prediction"
+                )
+            self.ax_xy.plot(self.x, self.y, label="Trayectory robot")
+            self.ax_xy.scatter(
+                xr, yr, s=60, marker="s", color="black", zorder=5, label="Robot"
+            )
+            self.ax_xy.set_xlim(xr - 2.5, xr + 2.5)
+            self.ax_xy.set_ylim(yr - 2.5, yr + 2.5)
+            self.ax_xy.set_aspect("equal", adjustable="datalim")
+            self.ax_xy.set_xlabel("x [m]")
+            self.ax_xy.set_ylabel("y [m]")
+            self.ax_xy.legend()
+            self.ax_xy.grid(True)
 
-        def align(t, *signals):
-            """Alinea señales al mismo tamaño."""
-            L = len(t)
-            sigs = []
-            for s in signals:
-                if len(s) < 2:
-                    sigs.append(None)
-                else:
-                    s2 = list(s)[-L:]
-                    sigs.append(s2)
-            return list(t), sigs
+        self.ax_vw.cla()
+        self.ax_vw_r.cla()
+        if self.v_cmd:
+            t_cmd = list(self.t)[-len(self.v_cmd) :]
+            self.ax_vw.plot(t_cmd, self.v_cmd, label="v", color="#d62728", linewidth=2)
+            self.ax_vw.set_ylabel("Longitudinal velocity [m/s]", fontweight="bold")
+            self.ax_vw_r.plot(
+                t_cmd, self.w_cmd, label="ω", color="#1f77b4", linewidth=2
+            )
+            self.ax_vw_r.set_ylabel("Angular velocity [rad/s]", fontweight="bold")
+            lines_vw = self.ax_vw.get_lines() + self.ax_vw_r.get_lines()
+            labels_vw = [l.get_label() for l in lines_vw]
+            self.ax_vw.legend(lines_vw, labels_vw)
+            self.ax_vw.grid(True)
 
-        results = {}
+        self.ax_err.cla()
+        if self.teb_x and self.x:
+            xr, yr = self.x[-1], self.y[-1]
+            xp, yp = self.teb_x[0], self.teb_y[0]
+            ex = xr - xp
+            ey = yr - yp
+            self.err_pred_x.append(ex)
+            self.err_pred_y.append(ey)
+            t_err = list(self.t)[-len(self.err_pred_x) :]
+            self.ax_err.plot(t_err, list(self.err_pred_x), "m", label="e_x")
+            self.ax_err.plot(t_err, list(self.err_pred_y), "c", label="e_y")
+            self.ax_err.set_xlabel("Time [s]")
+            self.ax_err.set_ylabel("Local planner error [m]")
+            self.ax_err.legend()
+            self.ax_err.grid(True)
 
-        # ---------------- High Level (Planner) ----------------
-        tH, (eH, uH) = align(self.t_hist, self.e_high, self.u_high)
-        if eH and uH:
-            eH = np.array(eH)
-            uH = np.array(uH)
+        SAE2, SCI2, J2 = self.compute_indices_teb_ref()
+        self.draw_table_fig2(SAE1, SCI1, J1, SAE2, SCI2, J2)
+        self.fig2.tight_layout()
+        self.fig2.canvas.draw_idle()
+        self.fig2.canvas.flush_events()
+        plt.pause(0.001)
 
-            # Normalizaciones
-            eH_n = eH / E_SCALE_H
-            uH_n = uH / U_SCALE
+        # Figure 3
+        self.ax_theta_traj.cla()
+        self.ax_theta_traj.set_title(
+            "Figure 3, Category 3: High Level. Planner trayectory (Theta*)"
+        )
 
-            # Integrales clásicas
-            IAE = trapz_integral(tH, y_abs=np.abs(eH))
-            ISE = trapz_integral(tH, y=(eH**2))
-            ITAE = trapz_integral(tH, y_abs=np.abs(eH), weight_time=True)
-            ISU = su_integral(tH, u=uH, abs_u=False)
-            IAU = su_integral(tH, u=uH, abs_u=True)
-            ISDU = sdu_integral(tH, u=uH)
+        # if self.theta_x and self.theta_y:
+        # self.ax_theta_traj.plot(self.theta_x, self.theta_y, 'g', label="Theta* path")
 
-            # Índices normalizados
-            MSAE = np.mean(np.abs(eH_n))
-            duH = np.diff(uH_n)
-            MSIC = np.mean(duH**2) if len(duH) > 0 else 0.0
-            J = MSAE + MSIC
+        if self.ref_x and self.ref_y:
+            self.ax_theta_traj.plot(
+                self.ref_x, self.ref_y, "--r", label=r"$\theta^*$ plan"
+            )
+        if self.teb_x and self.teb_y:
+            self.ax_theta_traj.plot(
+                self.teb_x, self.teb_y, color="#2ca02c", label="TEB prediction"
+            )
+        if self.x and self.y:
+            self.ax_theta_traj.plot(self.x, self.y, "b", label="Trajectory robot")
 
-            results['H'] = (IAE, ISE, ITAE, ISU, IAU, ISDU, MSAE, MSIC, J)
-        else:
-            results['H'] = None
+        self.ax_theta_traj.scatter(
+            xr, yr, s=60, marker="s", color="black", zorder=5, label="Robot"
+        )
 
-        # ---------------- Mid Level (MPC) ----------------
-        tM, (eM, uM) = align(self.t_hist, self.e_mid, self.u_mid)
-        if eM and uM:
-            eM = np.array(eM)
-            uM = np.array(uM)
+        self.ax_theta_traj.set_xlabel("x [m]")
+        self.ax_theta_traj.set_ylabel("y [m]")
+        self.ax_theta_traj.grid(True)
+        self.ax_theta_traj.legend()
+        self.ax_theta_traj.set_aspect("equal", adjustable="datalim")
 
-            # Normalizaciones
-            eM_n = eM / U_SCALE
-            uM_n = uM / U_SCALE
+        self.ax_theta_err.cla()
+        if self.theta_err:
+            t_err_th = list(self.t)[-len(self.theta_err) :]
+            self.ax_theta_err.plot(
+                t_err_th, list(self.theta_err), "m", label="Theta* error"
+            )
 
-            # Integrales clásicas
-            IAE = trapz_integral(tM, y_abs=np.abs(eM))
-            ISE = trapz_integral(tM, y=(eM**2))
-            ITAE = trapz_integral(tM, y_abs=np.abs(eM), weight_time=True)
-            ISU = su_integral(tM, u=uM, abs_u=False)
-            IAU = su_integral(tM, u=uM, abs_u=True)
-            ISDU = sdu_integral(tM, u=uM)
+        self.ax_theta_err.set_ylabel("Global planner error [m]")
+        self.ax_theta_err.set_xlabel("Time [s]")
+        self.ax_theta_err.grid(True)
+        self.ax_theta_err.legend()
+        SAE3, SCI3, J3, path_len = self.compute_indices_theta()
+        self.draw_table_fig3(SAE1, SCI1, J1, SAE2, SCI2, J2, SAE3, SCI3, J3)
+        self.fig3.tight_layout()
+        self.fig3.canvas.draw_idle()
+        self.fig3.canvas.flush_events()
+        plt.pause(0.001)
 
-            # Índices normalizados
-            MSAE = np.mean(np.abs(eM_n))
-            duM = np.diff(uM_n)
-            MSIC = np.mean(duM**2) if len(duM) > 0 else 0.0
-            J = MSAE + MSIC
-
-            results['M'] = (IAE, ISE, ITAE, ISU, IAU, ISDU, MSAE, MSIC, J)
-        else:
-            results['M'] = None
-
-        # ---------------- Low Level (PID) ----------------
-        tL, (eL, uL) = align(self.t_hist, self.e_low, self.u_low)
-        if eL and uL:
-            eL = np.array(eL)
-            uL = np.array(uL)
-
-            # Normalizaciones
-            eL_n = eL / W_MAX
-            uL_n = uL / T_SCALE_L
-
-            # Integrales clásicas
-            IAE = trapz_integral(tL, y_abs=np.abs(eL))
-            ISE = trapz_integral(tL, y=(eL**2))
-            ITAE = trapz_integral(tL, y_abs=np.abs(eL), weight_time=True)
-            ISU = su_integral(tL, u=uL, abs_u=False)
-            IAU = su_integral(tL, u=uL, abs_u=True)
-            ISDU = sdu_integral(tL, u=uL)
-
-            # Índices normalizados
-            MSAE = np.mean(np.abs(eL_n))
-            duL = np.diff(uL_n)
-            MSIC = np.mean(duL**2) if len(duL) > 0 else 0.0
-            J = MSAE + MSIC
-
-            results['L'] = (IAE, ISE, ITAE, ISU, IAU, ISDU, MSAE, MSIC, J)
-        else:
-            results['L'] = None
-
-        return results
-
-
-    def update_metrics(self):
-        res = self.compute_all_indices()
-
-        # --- Formateador genérico para High, Mid y Low ---
-        def fmt_indices(block, vals):
-            if vals is None:
-                self.txt[f'{block}_IAE'].set_text("MSAE = N/A")
-                self.txt[f'{block}_ISE'].set_text("MSIC = N/A")
-                self.txt[f'{block}_ITAE'].set_text("J = N/A")
-            else:
-                MSAE = vals[6]
-                MSIC = vals[7]
-                J = vals[8]
-                self.txt[f'{block}_IAE'].set_text(f"MSAE = {MSAE:.4f}")
-                self.txt[f'{block}_ISE'].set_text(f"MSIC = {MSIC:.4f}")
-                self.txt[f'{block}_ITAE'].set_text(f"J = {J:.4f}")
-
-            # Limpia los otros campos visuales del bloque
-            for key in ['ISU', 'IAU', 'ISDU']:
-                if f'{block}_{key}' in self.txt:
-                    self.txt[f'{block}_{key}'].set_text("")
-
-        # Mostrar MSAE / MSIC / J
-        fmt_indices('H', res.get('H'))
-        fmt_indices('M', res.get('M'))
-        fmt_indices('L', res.get('L'))
-
-        self.fig.canvas.draw_idle()
-
-
-    # --------------------------- Guardado CSV en shutdown ---------------------------
-    def save_csv_on_exit(self):
-        res = self.compute_all_indices()
-
-        # asegurar carpeta ./result
-        out_dir = os.path.join(os.getcwd(), 'result')
-        os.makedirs(out_dir, exist_ok=True)
-        ts = datetime.now().strftime('%Y%m%d_%H%M%S')
-        out_path = os.path.join(out_dir, f'performance_{ts}.csv')
-
+    def save_csv(self):
+        base_dir = os.path.join(os.getcwd(), "result", "category_3")
+        os.makedirs(base_dir, exist_ok=True)
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        path = os.path.join(base_dir, f"category_3_{ts}.csv")
+        SAE1, SCI1, J1 = self.compute_indices_wheels()
+        SAE2, SCI2, J2 = self.compute_indices_teb_ref()
+        SAE3, SCI3, J3, path_len = self.compute_indices_theta()
+        J_final = (J1 + J2 + J3) / 3.0
         header = [
-            'Level', 'IAE', 'ISE', 'ITAE', 'ISU', 'IAU', 'ISDU',
-            'MSAE', 'MSIC', 'J',
-            'feedforward_enabled', 'antiwindup_enabled', 'referencefilter_enabled'
+            "time",
+            "sp_l",
+            "sp_r",
+            "act_l",
+            "act_r",
+            "torque_l",
+            "torque_r",
+            "err_l",
+            "err_r",
+            "v",
+            "w",
+            "x",
+            "y",
+            "pitch",
+            "sector",
+            "err_pred_x",
+            "err_pred_y",
+            "ref_near_x",
+            "ref_near_y",
+            "teb_near_x",
+            "teb_near_y",
+            "err_teb_ref",
+            "theta_err",
+            "SAE1",
+            "SCI1",
+            "J1",
+            "SAE2",
+            "SCI2",
+            "J2",
+            "SAE3",
+            "SCI3",
+            "J3",
+            "J_final",
         ]
-        rows = []
-
-        def row_from(level_key, vals):
-            if vals is None:
-                return [level_key] + ['N/A'] * 9 + [
-                    self.enable_feedforward, self.enable_antiwindup, self.enable_referencefilter
-                ]
-            IAE, ISE, ITAE, ISU, IAU, ISDU, MSAE, MSIC, J = vals
-            return [
-                level_key, f'{IAE:.6f}', f'{ISE:.6f}', f'{ITAE:.6f}',
-                f'{ISU:.6f}', f'{IAU:.6f}', f'{ISDU:.6f}',
-                f'{MSAE:.6f}', f'{MSIC:.6f}', f'{J:.6f}',
-                self.enable_feedforward, self.enable_antiwindup, self.enable_referencefilter
-            ]
-
-        rows.append(row_from('High', res.get('H')))
-        rows.append(row_from('Mid',  res.get('M')))
-        rows.append(row_from('Low',  res.get('L')))
-
-        with open(out_path, 'w', newline='') as f:
+        with open(path, "w", newline="") as f:
             writer = csv.writer(f)
             writer.writerow(header)
-            writer.writerows(rows)
+            N = len(self.t)
+            for i in range(N):
+                writer.writerow(
+                    [
+                        self.t[i],
+                        self.sp_l[i] if i < len(self.sp_l) else "",
+                        self.sp_r[i] if i < len(self.sp_r) else "",
+                        self.act_l[i] if i < len(self.act_l) else "",
+                        self.act_r[i] if i < len(self.act_r) else "",
+                        self.torque_l[i] if i < len(self.torque_l) else "",
+                        self.torque_r[i] if i < len(self.torque_r) else "",
+                        self.err_l[i] if i < len(self.err_l) else "",
+                        self.err_r[i] if i < len(self.err_r) else "",
+                        self.v_cmd[i] if i < len(self.v_cmd) else "",
+                        self.w_cmd[i] if i < len(self.w_cmd) else "",
+                        self.x[i] if i < len(self.x) else "",
+                        self.y[i] if i < len(self.y) else "",
+                        self.pitch[i] if i < len(self.pitch) else "",
+                        self.sector[i] if i < len(self.sector) else "",
+                        self.err_pred_x[i] if i < len(self.err_pred_x) else "",
+                        self.err_pred_y[i] if i < len(self.err_pred_y) else "",
+                        self.ref_near_x[i] if i < len(self.ref_near_x) else "",
+                        self.ref_near_y[i] if i < len(self.ref_near_y) else "",
+                        self.teb_near_x[i] if i < len(self.teb_near_x) else "",
+                        self.teb_near_y[i] if i < len(self.teb_near_y) else "",
+                        self.err_teb_ref[i] if i < len(self.err_teb_ref) else "",
+                        self.theta_err[i] if i < len(self.theta_err) else "",
+                        SAE1,
+                        SCI1,
+                        J1,
+                        SAE2,
+                        SCI2,
+                        J2,
+                        SAE3,
+                        SCI3,
+                        J3,
+                        J_final,
+                    ]
+                )
+        self.get_logger().info(f"CSV saved in: {path}")
 
-        self.get_logger().info(f"💾 Saved performance CSV: {out_path}")
 
-
-
-# ============================== MAIN ==============================
 def main():
     rclpy.init()
-    node = PlotterHierarchical()
+    node = PlotterC3()
+    plt.show(block=False)
     try:
         rclpy.spin(node)
     except KeyboardInterrupt:
-        node.get_logger().info("Shutting down plotter...")
+        node.get_logger().info("Stopping benchmark and saving CSV...")
     finally:
-        try:
-            node.save_csv_on_exit()
-        except Exception as e:
-            node.get_logger().error(f"Error saving CSV: {e}")
+        node.save_csv()
         node.destroy_node()
         rclpy.shutdown()
-        try:
-            plt.close('all')
-        except Exception:
-            pass
+        plt.close("all")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

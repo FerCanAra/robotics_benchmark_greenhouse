@@ -4,18 +4,16 @@ from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from geometry_msgs.msg import PoseWithCovarianceStamped
 
+
 class InitPosePublisher(Node):
     def __init__(self):
-        super().__init__('init_pose_publisher')
+        super().__init__("init_pose_publisher")
         self.subscription = self.create_subscription(
-            Odometry,
-            '/odom',
-            self.odom_callback,
-            10)
+            Odometry, "/odom", self.odom_callback, 10
+        )
         self.publisher = self.create_publisher(
-            PoseWithCovarianceStamped,
-            '/initialpose',
-            10)
+            PoseWithCovarianceStamped, "/initialpose", 10
+        )
         self.pose_published = False
         self.get_logger().info("Esperando primer /odom para publicar /initialpose...")
 
@@ -25,11 +23,11 @@ class InitPosePublisher(Node):
 
         pose_msg = PoseWithCovarianceStamped()
         pose_msg.header.stamp = self.get_clock().now().to_msg()
-        pose_msg.header.frame_id = "map"   # ← AMCL espera 'map' aquí
+        pose_msg.header.frame_id = "map"  # ← AMCL espera 'map' aquí
         pose_msg.pose.pose = msg.pose.pose
 
         # Opcional: pequeñas covarianzas
-        pose_msg.pose.covariance = [0.0]*36
+        pose_msg.pose.covariance = [0.0] * 36
         pose_msg.pose.covariance[0] = 0.25
         pose_msg.pose.covariance[7] = 0.25
         pose_msg.pose.covariance[35] = 0.0685
@@ -40,6 +38,7 @@ class InitPosePublisher(Node):
         # Si quieres, puedes cerrar el nodo tras publicar:
         # self.destroy_node()
 
+
 def main(args=None):
     rclpy.init(args=args)
     node = InitPosePublisher()
@@ -47,5 +46,6 @@ def main(args=None):
     node.destroy_node()
     rclpy.shutdown()
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
     main()

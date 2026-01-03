@@ -152,6 +152,14 @@ Visualization Manager:
       Topic: /map
       Value: true
 
+    # Goal pose
+    - Class: rviz_default_plugins/MarkerArray
+      Enabled: true
+      Name: Goal Markers
+      Topic:
+        Value: /goal_markers
+      Value: true
+
     - Alpha: 0.7
       Class: rviz_default_plugins/Map
       Color Scheme: costmap

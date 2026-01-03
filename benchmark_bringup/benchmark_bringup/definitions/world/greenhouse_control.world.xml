@@ -63,14 +63,18 @@
 	<!-- ================================================================================================ -->
 
 	<!-- ground -->
+	<variable name="MIN_ALT_M" value="$f{$env{MIN_ALT}}"/>
+	<variable name="MAX_ALT_M" value="$f{$env{MAX_ALT}}"/>
 
 	<element class='elevation_map'>
-		<!-- File can be an image or a .txt matrix -->
+		<!-- VARIABLES PARA BENCHMARK. FERNANDO -->
+
+
 		<resolution>0.3</resolution>
 		<!-- <elevation_data_matrix>[3e-2 3e-2; 2e-2 1e-2;1e-2 2e-2;4e-2 2e-2;3e-2 1e-2;5e-2 2e-2;3e-2 1e-2;3e-2 1e-2;1e-2 5e-2;1e-2 2e-2;1e-2 2e-2;1e-2 2e-2;1e-2 1e-2]</elevation_data_matrix> -->
 		<elevation_image>elevation_mesh1.png</elevation_image>
-		<elevation_image_min_z>-0.3</elevation_image_min_z>
-		<elevation_image_max_z>0.3</elevation_image_max_z>
+		<elevation_image_min_z>$f{MIN_ALT_M}</elevation_image_min_z>
+		<elevation_image_max_z>$f{MAX_ALT_M}</elevation_image_max_z>
 
 		<texture_image>https://mrpt.github.io/mvsim-models/textures-cgbookcase/ForestFloor01_1K_BaseColor.png</texture_image>
 		<texture_extension_x>1.0</texture_extension_x>
@@ -192,6 +196,29 @@
 		   Vehicle classes definition
 	     ============================= -->
 	<!-- <include file="../../../../../../src/mvsim/definitions/agricobiot_benchmark.vehicle.xml" /> -->
+	<!-- ================= VEHICLE MASS VARIABLES ================= -->
+
+	<variable name="BASE_MASS" value="70"/>
+	<variable name="PAYLOAD" value="$f{$env{PAYLOAD_MASS}}"/>
+	<variable name="mass" value="$f{BASE_MASS + PAYLOAD}"/>
+	<variable name="USE_ADAP_FRICTION" value="$f{$env{USE_ADAPTATIVE_FRICTION}}"/>
+	<!-- ================= PID CONTROLLER VARIABLES ================= -->
+	<param name="kp" value="$env{KP}"/>
+	<param name="ki" value="$env{KI}"/>
+	<param name="kd" value="$env{KD}"/>
+	<param name="n" value="$env{N}"/>
+	<param name="enable_antiwindup" value="$env{ENABLE_ANTIWINDUP}"/>
+
+	<param name="enable_feedforward" value="$env{ENABLE_FEEDFORWARD}"/>
+	<param name="k_ff" value="$env{K_FF}"/>
+	<param name="tau_ff" value="$env{TAU_FF}"/>
+
+
+	<param name="enable_referencefilter" value="$env{ENABLE_REFERENCEFILTER}"/>
+	<param name="tau_f" value="$env{TAU_F}"/>
+	<param name="n_f" value="$env{N_F}"/>
+
+	<param name="max_torque" value="$env{MAX_TORQUE}"/>
 
 	<include file="../robots/agricobiot.vehicle.xml" />
 	<!-- <include file="../definitions/agricobiot2.vehicle.xml" /> -->
@@ -206,7 +233,7 @@
 		<init_pose>10.1 3 90</init_pose>
 		<!-- <init_pose>4.1 13.8 360</init_pose> -->
 
-		<!-- <chassis mass="$f{ROBOT_MASS}" /> -->
+		<chassis mass="$f{$env{mass}}" />
 
 		<include file="../sensors/rplidar-a2.sensor.xml" raytrace_3d="true" sensor_x="0" sensor_y="0" sensor_z="0.45" sensor_yaw="180" sensor_name="laser1" sensor_hz="10.0" />
 
