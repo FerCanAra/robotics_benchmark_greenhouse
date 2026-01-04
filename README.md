@@ -83,7 +83,7 @@ To support users with different expertise levels and research objectives, the be
 
 - **Category 3**: Targeted at advanced users developing high-level control and planning strategies, including sophisticated motion planners and decision-making algorithms. This category is appropriate for doctoral-level research.
 
-### Benchmark Categories
+### Disturbances
 
 To evaluate controller robustness under realistic operating conditions, the benchmark includes three types of disturbances, which can be activated independently or in combination:
 
