@@ -108,11 +108,11 @@ where:
 
 - ```category:=1 ``` selects the evaluation category (1, 2, or 3),
 
-- ```payload``` specifies the additional load,
+- ```payload``` specifies the additional load (from 0 to 70 kg),
 
-- ```terrain_slope:=false ``` enables or disables terrain inclination,
+- ```terrain_slope:=false ``` enables or disables terrain inclination (true or false),
 
-- ```change_terrain:=false ``` change_terrain enables or disables terrain heterogeneity.
+- ```change_terrain:=false ``` change_terrain enables or disables terrain heterogeneity (true or false).
 
 Example:
 
