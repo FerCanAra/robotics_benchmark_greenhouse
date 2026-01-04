@@ -21,7 +21,6 @@ This project is distributed under the **BSD 3-Clause License**.
 
 Copyright © 2026, Individual contributors  
 Project owner: Fernando Cañadas Aránega <fernando.ca@ual.es> (University of Almeria) and collaborators
-Copyright © 2012–2020, University of Almeria  
 
 See the [LICENSE](LICENSE) file for full license text.
 
@@ -51,7 +50,7 @@ git clone --recurse-submodules https://github.com/FerCanAra/robotics_benchmark_g
 cd robotics_benchmark_greenhouse
 git submodule update --init --recursive
 cd ../../..
-colcon build --packages-select mvsim --cmake-args -DCMAKE_BUILD_TYPE=Release
+colcon build --symlink install -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
 
