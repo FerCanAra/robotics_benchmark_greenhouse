@@ -60,7 +60,7 @@ The proposed simulator is structured according to a hierarchical control archite
 
 #### Control layers
 
-1. **Low level**: The low-level control layer focuses on the internal control of the robot actuators, specifically the motor dynamics. This level is implemented directly within the MVSim simulation environment, where the robot’s physical parameters and control gains can be configured through dedicated [parameter files](benchmark_bringup/benchmark_bringup/control_params/c1_pid_params.yaml). This layer is responsible for translating velocity commands into motor torques while accounting for realistic vehicle dynamics, including wheel–ground interactions. The low-level control scheme adopted in the benchmark is illustrated in the corresponding block diagram provided in the accompanying article.
+1. **Low-level**: The low-level control layer focuses on the internal control of the robot actuators, specifically the motor dynamics. This level is implemented directly within the MVSim simulation environment, where the robot’s physical parameters and control gains can be configured through dedicated [parameter files](benchmark_bringup/benchmark_bringup/control_params/c1_pid_params.yaml). This layer is responsible for translating velocity commands into motor torques while accounting for realistic vehicle dynamics, including wheel–ground interactions. The low-level control scheme adopted in the benchmark is illustrated in the corresponding block diagram provided in the accompanying article.
 
 <img  width="600" height="300" alt="PID" src="https://github.com/user-attachments/assets/0b418686-43ee-442c-a235-5fe26e365d7e" />
 
@@ -68,7 +68,7 @@ The proposed simulator is structured according to a hierarchical control archite
 
 <img width="600" height="200"  alt="MPC" src="https://github.com/user-attachments/assets/1d0c3d82-67cf-48c2-a0e4-5736f8eb0600" />
 
-3. **High level**: The high-level control layer focuses on global path planning, computing efficient trajectories within the environment while accounting for obstacles and workspace constraints. In this benchmark, the [Lazzy Theta star](https://idm-lab.org/bib/abstracts/papers/aaai10b.pdf) global planner is employed and integrated via the Nav2 framework. All [planning parameters](benchmark_bringup/benchmark_bringup/control_params/c3_theta_start_params.yaml) can be modified, enabling users to analyze the impact of high-level planning decisions on overall navigation performance. The complete high-level control structure is presented in the associated schematic.
+3. **High-level**: The high-level control layer focuses on global path planning, computing efficient trajectories within the environment while accounting for obstacles and workspace constraints. In this benchmark, the [Lazzy Theta star](https://idm-lab.org/bib/abstracts/papers/aaai10b.pdf) global planner is employed and integrated via the Nav2 framework. All [planning parameters](benchmark_bringup/benchmark_bringup/control_params/c3_theta_start_params.yaml) can be modified, enabling users to analyze the impact of high-level planning decisions on overall navigation performance. The complete high-level control structure is presented in the associated schematic.
 
 <img width="600" height="200" alt="Planner" src="https://github.com/user-attachments/assets/1c7a3c83-0300-4611-8746-6d5256683a16" />
 
