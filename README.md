@@ -44,8 +44,8 @@ Install and build
 In order to run the simulator, the official project repository must be installed. This can be done easily using the following commands.
 
 ```
-mkdir -p ~/robotics_benchmark_greenhouse/src
-cd ~/robotics_benchmark_greenhouse/src
+mkdir -p ~/ros2_ws/src
+cd ~/ros2_ws/src
 git clone --recurse-submodules https://github.com/FerCanAra/robotics_benchmark_greenhouse.git
 cd robotics_benchmark_greenhouse
 git submodule update --init --recursive
