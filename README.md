@@ -41,7 +41,7 @@ sudo apt install ros-$ROS_DISTRO-nav2-bringup
 
 Install and build
 --------------------
-In order to run the simulator, the official project repository must be installed. This can be done easily using the following commands.
+In order to run the benchmark, the official project repository must be installed. This can be done easily using the following commands.
 
 ```
 mkdir -p ~/ros2_ws/src
