@@ -39,7 +39,7 @@ MVSIM_WORLD_FILE = os.path.join(
     benchmarkDir, "definitions/world", "greenhouse_control.world.xml"
 )  # default world file
 MAP_FILE = os.path.join(
-    benchmarkDir, "maps", "greenhouse_test2.yaml"
+    benchmarkDir, "maps", "greenhouse_benchmark.yaml"
 )  # Default slam map file
 RVIZ2_FILE_C2 = os.path.join(
     benchmarkDir, "rviz", "c2_greenhouse.rviz"
@@ -56,7 +56,7 @@ TEB_MPC_PARAMS = os.path.join(
     benchmarkDir, "control_params", "c2_mpc_teb_params.yaml"
 )  # c2 parameters file
 THETA_STAR_PARAMS = os.path.join(
-    benchmarkDir, "control_params", "c3_theta_start_params.yaml"
+    benchmarkDir, "control_params", "c3_theta_star_params.yaml"
 )  # c2 and c3 parameters file
 NAV2_PARAMS_C2 = os.path.join(
     benchmarkDir, "configuration", "c2_nav2_config.yaml"

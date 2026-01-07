@@ -1,10 +1,18 @@
-<!--
+<!--=========================================================================
+  |                       MultiVehicle simulator (libmvsim)                 |
+  |                                                                         |
+  | Copyright (C) 2014-2026  Jose Luis Blanco Claraco                       |
+  | Copyright (C) 2026  Fernando Cañadas Aránega                            |
+  | Distributed under 3-clause BSD License                                  |
+  |   See COPYING                                                           |
+  +=========================================================================+ */
   Vehicle class definition file.
   Intended to be included into world XML files.
   Common sensors could be included here, but they are left to be included in 
   class instantiations.
-  Refer to mvsim_tutorial example files.
--->
+  Refer to mvsim_tutorial example files.-->
+
+
 <vehicle:class name="agricobiot">
 
     <!--  Dynamical model -->
@@ -47,13 +55,10 @@
             <shape_from_visual/>
         </chassis>
 
-        <!-- Tarea 1: Una clase en python del esqueo del controller del C++ -->
-        <!-- PID EN PYHTON -->
 
         <!--   Motor controller -->
         <controller class="twist_pid">
             <!-- PID Params + Filter noise -->
-            <!-- <KP>300</KP>  <KI>100</KI>  <KD>0</KD>  <N>0</N> -->
             <KP>$env{KP}</KP>
             <KI>$env{KI}</KI>
             <KD>$env{KD}</KD>
@@ -65,38 +70,12 @@
             <K_ff>$env{K_FF}</K_ff>
             <tau_ff>$env{TAU_FF}</tau_ff>
 
-
-            <!-- Adaptative feedforward tools -->
-            <enable_adaptative>false</enable_adaptative>
-            <full_payload>true</full_payload>
-            <K_ff1>0.03</K_ff1>
-            <tau_ff1>0.0</tau_ff1>            <!-- Empty payload in zone 1-->
-            <K_ff2>0.025</K_ff2>
-            <tau_ff2>0.0</tau_ff2>            <!-- Empty payload in zone 2 -->
-            <K_ff3>0.02</K_ff3>
-            <tau_ff3>0.0</tau_ff3>            <!-- Empty payload in zone 3 -->
-            <K_ff4>0.05</K_ff4>
-            <tau_ff4>0.0</tau_ff4>            <!-- Full payload in zone 1 Ok -->
-            <K_ff5>0.02</K_ff5>
-            <tau_ff5>0.0</tau_ff5>            <!-- Full payload in zone 2 Ok -->
-            <K_ff6>0.015</K_ff6>
-            <tau_ff6>0.0</tau_ff6>            <!-- Full payload in zone 3 -->
-            <new_vel_max>90</new_vel_max>
-            <new_w_max>90</new_w_max>
-            <dist_obst>0.2</dist_obst>
-
-            <!-- Consejo: Seleccione "AdaptativeFriction" para el modelo de friaccion-->
-
             <!-- Reference filter -->
             <enable_referencefilter>$env{ENABLE_REFERENCEFILTER}</enable_referencefilter>
             <tau_f>$env{TAU_F}</tau_f>
             <n_f>$env{N_F}</n_f>
 
-            <!-- Params for simulation. Real values of Husky Motor -->
-            <!-- <I_MAX>6.1</I_MAX>
-            <V>0.0</V><W>0</W>
-            <max_torque>8</max_torque> -->
-
+            <!-- Saturation -->
             <I_MAX>400</I_MAX>
             <V>0.0</V>
             <W>0</W>
@@ -106,7 +85,7 @@
 
     </dynamics>
 
-    <!-- Friction force simulation -->
+    <!-- Friction force simulation. You can change -->
     <if condition="$f{USE_ADAP_FRICTION}">
         <friction class="AdaptativeFriction">
             <zones>

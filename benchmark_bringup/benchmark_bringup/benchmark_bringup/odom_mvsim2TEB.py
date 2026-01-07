@@ -1,3 +1,15 @@
+# +-------------------------------------------------------------------------+
+# | Benchmark control simulator |
+# | |
+# | Copyright (C) 2025 Fernando Cañadas Aránega |
+# | PhD Student University of Almería, Spain |
+# | Contact: fernando.ca@ual.es |
+# | Distributed under 3-clause BSD License |
+# | See COPYING |
+# +-------------------------------------------------------------------------+
+# ---------------------------------------------------------------------------
+# acml publisher, required for MPC
+# ---------------------------------------------------------------------------
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
@@ -23,10 +35,8 @@ class InitPosePublisher(Node):
 
         pose_msg = PoseWithCovarianceStamped()
         pose_msg.header.stamp = self.get_clock().now().to_msg()
-        pose_msg.header.frame_id = "map"  # ← AMCL espera 'map' aquí
+        pose_msg.header.frame_id = "map"
         pose_msg.pose.pose = msg.pose.pose
-
-        # Opcional: pequeñas covarianzas
         pose_msg.pose.covariance = [0.0] * 36
         pose_msg.pose.covariance[0] = 0.25
         pose_msg.pose.covariance[7] = 0.25
@@ -35,8 +45,6 @@ class InitPosePublisher(Node):
         self.publisher.publish(pose_msg)
         self.pose_published = True
         self.get_logger().info("Publicada pose inicial desde /odom en /initialpose")
-        # Si quieres, puedes cerrar el nodo tras publicar:
-        # self.destroy_node()
 
 
 def main(args=None):
