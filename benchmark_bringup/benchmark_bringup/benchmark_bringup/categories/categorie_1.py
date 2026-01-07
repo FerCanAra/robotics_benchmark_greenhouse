@@ -35,6 +35,7 @@ class VelocityProfileCat1(Node):
         t = time.time() - self.start_time
         msg = Twist()
 
+        # ============= Speed profile =================
         if t < 5.0:
             msg.linear.x = 0.0
             msg.angular.z = 0.0

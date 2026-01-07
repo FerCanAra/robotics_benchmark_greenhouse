@@ -312,7 +312,7 @@ class PlotterC3(Node):
         if C_max > 0.0:
             SCI3 = C_total / C_max
         if SCI3 > 1.0:
-            SCI3 = 1.0  # saturación
+            SCI3 = 1.0
         else:
             SCI3 = 0.0
         J3 = SAE3 + SCI3
@@ -516,7 +516,8 @@ class PlotterC3(Node):
             return
         if len(self.t) < 2:
             return
-        # Figure 1
+        # ===================== FIGURE 1 =====================
+        # (4,1,1) ωL
         self.ax1_L.cla()
         self.ax1_L.set_title(
             "Figure 1, Category 3: Low Level Control. Angular Velocities of Left and Right Wheels (PID)"
@@ -527,6 +528,7 @@ class PlotterC3(Node):
         self.ax1_L.legend()
         self.ax1_L.grid(True)
 
+        # (4,1,2) ωR
         self.ax1_R.cla()
         self.ax1_R.plot(self.t, self.sp_r, color="#af1fb4", label=r"sp $\omega_R$")
         self.ax1_R.plot(self.t, self.act_r, "--", color="#0ee3ff", label=r"$\omega_R$")
@@ -534,6 +536,7 @@ class PlotterC3(Node):
         self.ax1_R.legend()
         self.ax1_R.grid(True)
 
+        # (4,1,3) Torque inputs
         self.ax2.cla()
         self.ax2.plot(self.t, self.torque_l, color="#67bd72", label=r"$\tau_L$")
         self.ax2.plot(self.t, self.torque_r, "--", color="#a06a2cff", label=r"$\tau_R$")
@@ -546,6 +549,7 @@ class PlotterC3(Node):
         self.ax3r = self.ax3.twinx()
         ax3r = self.ax3.twinx()
 
+        # (4,1,4) Disturbances
         if self.pitch or self.sector:
             n = min(
                 len(self.t),
@@ -578,7 +582,7 @@ class PlotterC3(Node):
         labels3 = [l.get_label() for l in lines3]
         if lines3:
             self.ax3.legend(lines3, labels3, loc="upper left")
-
+        # --------------TABLE 1 -----------------------
         SAE1, SCI1, J1 = self.compute_indices_wheels()
         if self.last_msg is not None:
             self.draw_table_fig1(SAE1, SCI1, J1)
@@ -587,7 +591,8 @@ class PlotterC3(Node):
         self.fig1.canvas.flush_events()
         plt.pause(0.001)
 
-        # Figure 2
+        # ===================== FIGURE 2 =====================
+        # (3,1,1) Trajectory
         self.ax_xy.cla()
         if self.x and self.y:
             xr = self.x[-1]
@@ -611,6 +616,7 @@ class PlotterC3(Node):
             self.ax_xy.legend()
             self.ax_xy.grid(True)
 
+        # (3,1,2) v & w
         self.ax_vw.cla()
         self.ax_vw_r.cla()
         if self.v_cmd:
@@ -626,6 +632,7 @@ class PlotterC3(Node):
             self.ax_vw.legend(lines_vw, labels_vw)
             self.ax_vw.grid(True)
 
+        # (3,1,3) Prediction error (err_pred_x, err_pred_y)
         self.ax_err.cla()
         if self.teb_x and self.x:
             xr, yr = self.x[-1], self.y[-1]
@@ -642,6 +649,7 @@ class PlotterC3(Node):
             self.ax_err.legend()
             self.ax_err.grid(True)
 
+        # -------------- TABLE 2 ------------------
         SAE2, SCI2, J2 = self.compute_indices_teb_ref()
         self.draw_table_fig2(SAE1, SCI1, J1, SAE2, SCI2, J2)
         self.fig2.tight_layout()
@@ -649,14 +657,12 @@ class PlotterC3(Node):
         self.fig2.canvas.flush_events()
         plt.pause(0.001)
 
-        # Figure 3
+        # ===================== FIGURE 3 =====================
+        # (2,1,1) Planner tarjectory
         self.ax_theta_traj.cla()
         self.ax_theta_traj.set_title(
             "Figure 3, Category 3: High Level. Planner trayectory (Theta*)"
         )
-
-        # if self.theta_x and self.theta_y:
-        # self.ax_theta_traj.plot(self.theta_x, self.theta_y, 'g', label="Theta* path")
 
         if self.ref_x and self.ref_y:
             self.ax_theta_traj.plot(
@@ -673,6 +679,7 @@ class PlotterC3(Node):
             xr, yr, s=60, marker="s", color="black", zorder=5, label="Robot"
         )
 
+        # (2,1,2) Planner error
         self.ax_theta_traj.set_xlabel("x [m]")
         self.ax_theta_traj.set_ylabel("y [m]")
         self.ax_theta_traj.grid(True)
@@ -690,6 +697,8 @@ class PlotterC3(Node):
         self.ax_theta_err.set_xlabel("Time [s]")
         self.ax_theta_err.grid(True)
         self.ax_theta_err.legend()
+
+        # -------- TABLE 3 ---------------------
         SAE3, SCI3, J3, path_len = self.compute_indices_theta()
         self.draw_table_fig3(SAE1, SCI1, J1, SAE2, SCI2, J2, SAE3, SCI3, J3)
         self.fig3.tight_layout()

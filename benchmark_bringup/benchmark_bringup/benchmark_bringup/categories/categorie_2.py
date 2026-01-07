@@ -33,7 +33,7 @@ class Category2Navigator(Node):
         self.navigator = BasicNavigator()
         self.marker_pub = self.create_publisher(MarkerArray, "/goal_markers", 10)
 
-        # CHANGE THE ROUTE HERE (x, y)
+        # CHANGE YOUR ROUTE HERE (x, y)
         self.route = [
             (10.2, 13.7),
             (15.0, 13.7),

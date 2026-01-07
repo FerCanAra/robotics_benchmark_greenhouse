@@ -12,7 +12,7 @@
 # ----------------------------- Comments: -----------------------------------
 # Category 3: Cat 1 (Low Level) + Cat 2 (Mid Level) + Cat 3 (High Level)
 # This is a configuration file; do not modify it. To change MPC parameters, go to:
-# benchmark_bringup/benchmark_bringup/control_params/c3_theta_start_params.yaml
+# benchmark_bringup/benchmark_bringup/control_params/c3_theta_star_params.yaml
 
 bt_navigator:
   ros__parameters:

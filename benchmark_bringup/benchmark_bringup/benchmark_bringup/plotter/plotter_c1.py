@@ -93,11 +93,11 @@ class PlotterC1(Node):
         self.fig = plt.figure(figsize=(14.5, 9.5))
         gs = GridSpec(4, 2, width_ratios=[3.6, 1.4], figure=self.fig)
 
-        self.ax1_L = self.fig.add_subplot(gs[0, 0])  # (4,1,1): ωL
-        self.ax1_R = self.fig.add_subplot(gs[1, 0])  # (4,1,2): ωR
-        self.ax2 = self.fig.add_subplot(gs[2, 0])  # (4,1,3): τL, τR
+        self.ax1_L = self.fig.add_subplot(gs[0, 0])
+        self.ax1_R = self.fig.add_subplot(gs[1, 0])
+        self.ax2 = self.fig.add_subplot(gs[2, 0])
         self.ax2r = self.ax2.twinx()
-        self.ax3 = self.fig.add_subplot(gs[3, 0])  # (4,1,4): slope + sector
+        self.ax3 = self.fig.add_subplot(gs[3, 0])
         self.ax3r = self.ax3.twinx()
         self.ax_table = self.fig.add_subplot(gs[:, 1])
         self.ax_table.axis("off")
@@ -167,7 +167,7 @@ class PlotterC1(Node):
         t = np.array(self.t)
         e = 0.5 * (np.array(self.err_l) + np.array(self.err_r))
         u = 0.5 * (np.array(self.torque_l) + np.array(self.torque_r))
-        # Normalización
+
         W_MAX = 3.2  # rad/s
         T_MAX = 20.0  # Nm
         e_norm = np.abs(e) / W_MAX

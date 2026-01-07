@@ -29,7 +29,7 @@ class Category3Navigator(Node):
 
         self.navigator = BasicNavigator()
 
-        # CHANGE THE OBJECTIVE POINT OF THE CATEGORY 3 HERE (x, y, yaw)
+        # CHANGE YOUR OBJECTIVE POINT OF THE CATEGORY 3 HERE (x, y, yaw)
         self.route = [
             (18.0, 17.4, 0.74),
         ]

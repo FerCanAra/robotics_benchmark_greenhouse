@@ -130,7 +130,7 @@ class PlotterC2(Node):
         self.ax_table1.axis("off")
 
         # =====================================================
-        #                     FIGURe 2
+        #                     FIGURE 2
         # =====================================================
         self.fig2 = plt.figure(figsize=(17, 10))
         gs2 = GridSpec(3, 2, width_ratios=[3.6, 1.4], figure=self.fig2)
@@ -196,13 +196,11 @@ class PlotterC2(Node):
         self.sector.append(self.current_sector)
 
         if self.teb_x and self.x:
-            # Error entre la posición actual y el primer punto del horizonte TEB
             ex = self.x[-1] - self.teb_x[0]
             ey = self.y[-1] - self.teb_y[0]
             self.err_pred_x.append(ex)
             self.err_pred_y.append(ey)
         else:
-            # Mantenemos la longitud de la cola con ceros si no hay datos aún
             self.err_pred_x.append(0.0)
             self.err_pred_y.append(0.0)
 
@@ -269,7 +267,7 @@ class PlotterC2(Node):
         self.teb_y = [p.position.y for p in msg.poses]
 
     # --------------------------------------------------
-    #         Prerformance Indices Calculation
+    #         Performance Indices Calculation
     # --------------------------------------------------
     def compute_indices_wheels(self):
         """
@@ -281,13 +279,9 @@ class PlotterC2(Node):
 
         t = np.array(self.t)
 
-        # Error medio ruedas
+        # Error
         e = 0.5 * (np.array(self.err_l) + np.array(self.err_r))
-
-        # Entrada media (torque)
         u = 0.5 * (np.array(self.torque_l) + np.array(self.torque_r))
-
-        # Normalización
         W_MAX = 3.2  # rad/s
         T_MAX = 20.0  # Nm
 
@@ -315,10 +309,7 @@ class PlotterC2(Node):
         v_arr = np.array(list(self.v_cmd)[-n:])
         w_arr = np.array(list(self.w_cmd)[-n:])
 
-        # SAE2:
         SAE2 = float(np.trapz(np.abs(e_path), t_arr))
-
-        # SCI2:
         V_MAX = 0.75
         W_MAX = 3.2
         ev_norm = np.abs(v_arr) / V_MAX
@@ -487,8 +478,6 @@ class PlotterC2(Node):
                 cell.set_linewidth(0.8)
                 cell.set_fontsize(11)
                 cell.PAD = 0.18
-
-                # Cambiamos la condición para que apunte a 0, 4 y 8
                 if i in (0, 4, 8):
                     cell.set_text_props(weight="bold")
                 else:
@@ -630,7 +619,6 @@ class PlotterC2(Node):
         # Prediction error (err_pred_x, err_pred_y)
         self.ax_err.cla()
         if len(self.err_pred_x) > 0:
-            # Aseguramos que el eje X (tiempo) y el eje Y (error) coincidan en tamaño
             n_points = min(len(self.t), len(self.err_pred_x))
             t_plot = list(self.t)[-n_points:]
             ex_plot = list(self.err_pred_x)[-n_points:]
