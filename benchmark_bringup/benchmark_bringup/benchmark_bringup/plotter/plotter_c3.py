@@ -89,6 +89,7 @@ class PlotterC3(Node):
         self.current_sector = 1
         self.start_time = None
         self.last_msg = None
+        self.t_err_pred = deque(maxlen=maxlen)
         self.create_subscription(
             BenchmarkParams, "/benchmark_params", self.cb_benchmark, 50
         )
@@ -110,7 +111,7 @@ class PlotterC3(Node):
         self.ax2 = self.fig1.add_subplot(gs1[2, 0])
         self.ax2r = None
         self.ax3 = self.fig1.add_subplot(gs1[3, 0])
-        self.ax3r = None
+        self.ax3r = self.ax3.twinx()
         self.ax_table1 = self.fig1.add_subplot(gs1[:, 1])
         self.ax_table1.axis("off")
         # ================= FIGURE 2 =================
@@ -154,9 +155,9 @@ class PlotterC3(Node):
         self.err_r.append(msg.error_r)
         if hasattr(msg, "pitch"):
             pitch_deg = np.degrees(msg.pitch)
-        else:
-            pitch_deg = 0.0
             self.pitch.append(pitch_deg)
+        else:
+            self.pitch.append(0.0)
 
         if (
             hasattr(msg, "mu")
@@ -247,6 +248,14 @@ class PlotterC3(Node):
         self.teb_x = [p.position.x for p in msg.poses]
         self.teb_y = [p.position.y for p in msg.poses]
 
+        if self.x and self.y and self.teb_x:
+            xr, yr = self.x[-1], self.y[-1]
+            xp, yp = self.teb_x[0], self.teb_y[0]
+
+            self.err_pred_x.append(xr - xp)
+            self.err_pred_y.append(yr - yp)
+            self.t_err_pred.append(self.t[-1])
+
     def cb_theta(self, msg: Path):
         self.theta_x = [p.pose.position.x for p in msg.poses]
         self.theta_y = [p.pose.position.y for p in msg.poses]
@@ -315,7 +324,7 @@ class PlotterC3(Node):
             SCI3 = 1.0
         else:
             SCI3 = 0.0
-        J3 = SAE3 + SCI3
+        J3 = SAE3
         return SAE3, SCI3, J3, path_len
 
     # --------------------- TABLAS ---------------------
@@ -446,7 +455,6 @@ class PlotterC3(Node):
             (r"$SAE_2$", f"{SAE2:.4f}"),
             (r"$SCI_2$", f"{SCI2:.4f}"),
             (r"J2 = $SAE_2$ + $SCI_2$", f"{J2:.4f}"),
-            (r"J=$\frac{1}{2}$(J1 + J2)", f"{J:.4f}"),
         ]
         table = Table(self.ax_table2, bbox=[0.05, 0.08, 0.9, 0.84])
         h = 0.06
@@ -473,7 +481,7 @@ class PlotterC3(Node):
     def draw_table_fig3(self, SAE1, SCI1, J1, SAE2, SCI2, J2, SAE3, SCI3, J3):
         self.ax_table3.cla()
         self.ax_table3.axis("off")
-        J3 = J1 + J2 + J3
+        J3 = (J1 + J2 + J3) / 3
         rows = [
             ("Low level Index", ""),
             (r"$SAE_1$", f"{SAE1:.4f}"),
@@ -485,8 +493,7 @@ class PlotterC3(Node):
             (r"J2 = $SAE_2$ + $SCI_2$", f"{J2:.4f}"),
             ("High level Index", ""),
             (r"$SAE_3$", f"{SAE3:.4f}"),
-            (r"$SCI_3$", f"{SCI3:.4f}"),
-            (r"J3 = $SAE_3$ + $SCI_3$", f"{J3:.4f}"),
+            (r"J3 = $SAE_3$", f"{SAE3:.4f}"),
             (r"J=$\frac{1}{3}$(J1 + J2 + J3)", f"{J3:.4f}"),
         ]
         table = Table(self.ax_table3, bbox=[0.05, 0.08, 0.9, 0.84])
@@ -544,41 +551,41 @@ class PlotterC3(Node):
         self.ax2.grid(True)
         self.ax2.legend()
 
-        if self.ax3r is not None:
-            self.ax3r.remove()
-        self.ax3r = self.ax3.twinx()
-        ax3r = self.ax3.twinx()
-
         # (4,1,4) Disturbances
+        self.ax3.cla()
+        self.ax3r.cla()
         if self.pitch or self.sector:
             n = min(
                 len(self.t),
                 len(self.pitch) if self.pitch else len(self.t),
                 len(self.sector) if self.sector else len(self.t),
             )
-        t_plot = list(self.t)[-n:]
+            t_plot = list(self.t)[-n:]
 
-        if self.pitch:
-            self.ax3.plot(t_plot, list(self.pitch)[-n:], color="#08519c", label="Slope")
-            self.ax3.set_ylabel("Slope [°]")
+            if self.pitch:
+                self.ax3.plot(
+                    t_plot, list(self.pitch)[-n:], color="#08519c", label="Slope"
+                )
+                self.ax3.set_ylabel(r"Slope [$\degree$]")
 
-        if self.sector:
-            ax3r.step(
-                t_plot,
-                list(self.sector)[-n:],
-                where="post",
-                linestyle="-",
-                linewidth=2.5,
-                color="#a50f15",
-                label="Terrain sector",
-            )
-            ax3r.set_ylabel("Sector")
-            ax3r.set_yticks([1, 2, 3])
-            ax3r.set_yticklabels(["S1", "S2", "S3"])
-        self.ax3.set_xlabel("Time [s]")
-        self.ax3.grid(True)
+            if self.sector:
+                self.ax3r.step(
+                    t_plot,
+                    list(self.sector)[-n:],
+                    where="post",
+                    linestyle="-",
+                    linewidth=2.5,
+                    color="#a50f15",
+                    label="Terrain sector",
+                )
+                self.ax3r.set_ylabel("Sector")
+                self.ax3r.set_yticks([1, 2, 3])
+                self.ax3r.set_yticklabels(["S1", "S2", "S3"])
 
-        lines3 = self.ax3.get_lines() + ax3r.get_lines()
+            self.ax3.set_xlabel("Time [s]")
+            self.ax3.grid(True)
+
+        lines3 = self.ax3.get_lines() + self.ax3r.get_lines()
         labels3 = [l.get_label() for l in lines3]
         if lines3:
             self.ax3.legend(lines3, labels3, loc="upper left")
@@ -634,20 +641,15 @@ class PlotterC3(Node):
 
         # (3,1,3) Prediction error (err_pred_x, err_pred_y)
         self.ax_err.cla()
-        if self.teb_x and self.x:
-            xr, yr = self.x[-1], self.y[-1]
-            xp, yp = self.teb_x[0], self.teb_y[0]
-            ex = xr - xp
-            ey = yr - yp
-            self.err_pred_x.append(ex)
-            self.err_pred_y.append(ey)
-            t_err = list(self.t)[-len(self.err_pred_x) :]
-            self.ax_err.plot(t_err, list(self.err_pred_x), "m", label="e_x")
-            self.ax_err.plot(t_err, list(self.err_pred_y), "c", label="e_y")
-            self.ax_err.set_xlabel("Time [s]")
-            self.ax_err.set_ylabel("Local planner error [m]")
-            self.ax_err.legend()
-            self.ax_err.grid(True)
+        if self.t and self.t[-1] >= self.MAX_TIME:
+            return
+        self.ax_err.plot(self.t_err_pred, self.err_pred_x, "m", label="e_x")
+        self.ax_err.plot(self.t_err_pred, self.err_pred_y, "c", label="e_y")
+
+        self.ax_err.set_xlabel("Time [s]")
+        self.ax_err.set_ylabel("Local planner error [m]")
+        self.ax_err.legend()
+        self.ax_err.grid(True)
 
         # -------------- TABLE 2 ------------------
         SAE2, SCI2, J2 = self.compute_indices_teb_ref()
@@ -675,9 +677,12 @@ class PlotterC3(Node):
         if self.x and self.y:
             self.ax_theta_traj.plot(self.x, self.y, "b", label="Trajectory robot")
 
-        self.ax_theta_traj.scatter(
-            xr, yr, s=60, marker="s", color="black", zorder=5, label="Robot"
-        )
+        if self.x and self.y:
+            xr = self.x[-1]
+            yr = self.y[-1]
+            self.ax_theta_traj.scatter(
+                xr, yr, s=60, marker="s", color="black", zorder=5, label="Robot"
+            )
 
         # (2,1,2) Planner error
         self.ax_theta_traj.set_xlabel("x [m]")
@@ -746,7 +751,6 @@ class PlotterC3(Node):
             "SCI2",
             "J2",
             "SAE3",
-            "SCI3",
             "J3",
             "J_final",
         ]

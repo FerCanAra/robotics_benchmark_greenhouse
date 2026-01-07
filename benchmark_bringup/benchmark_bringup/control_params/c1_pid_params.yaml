@@ -27,7 +27,7 @@ Feedforward:
 
 ReferenceFilter:
   enable_referencefilter: true # Enable reference filter
-  tau_f: 1.75 # Time constant for reference filter
+  tau_f: 0.0 # Time constant for reference filter
   n_f: 1 # Filter order
 
 MotorSim:

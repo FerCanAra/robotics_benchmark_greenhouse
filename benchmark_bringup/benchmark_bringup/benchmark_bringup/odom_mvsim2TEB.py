@@ -1,11 +1,11 @@
 # +-------------------------------------------------------------------------+
-# | Benchmark control simulator |
-# | |
-# | Copyright (C) 2025 Fernando Cañadas Aránega |
-# | PhD Student University of Almería, Spain |
-# | Contact: fernando.ca@ual.es |
-# | Distributed under 3-clause BSD License |
-# | See COPYING |
+# | Benchmark control simulator                                             |
+# |                                                                         |
+# | Copyright (C) 2025 Fernando Cañadas Aránega                             |
+# | PhD Student University of Almería, Spain                                |
+# | Contact: fernando.ca@ual.es                                             |
+# | Distributed under 3-clause BSD License                                  |
+# | See COPYING                                                             |
 # +-------------------------------------------------------------------------+
 # ---------------------------------------------------------------------------
 # acml publisher, required for MPC
@@ -27,7 +27,7 @@ class InitPosePublisher(Node):
             PoseWithCovarianceStamped, "/initialpose", 10
         )
         self.pose_published = False
-        self.get_logger().info("Esperando primer /odom para publicar /initialpose...")
+        self.get_logger().info("Waiting for first /odom to publish /initialpose...")
 
     def odom_callback(self, msg):
         if self.pose_published:
@@ -44,7 +44,8 @@ class InitPosePublisher(Node):
 
         self.publisher.publish(pose_msg)
         self.pose_published = True
-        self.get_logger().info("Publicada pose inicial desde /odom en /initialpose")
+        self.get_logger().info("Initial pose published from /odom in /initialpose")
+        self.destroy_node()
 
 
 def main(args=None):

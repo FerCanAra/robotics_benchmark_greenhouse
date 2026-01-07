@@ -444,7 +444,7 @@ class PlotterC2(Node):
 
         V_MAX = 0.75
         W_MAX = 3.2
-        J = J1 + J2
+        J = (J1 + J2) / 2
         rows = [
             ("Params", "Values"),
             (r"$v_{max}$ [m/s]", f"{V_MAX:.2f}"),
@@ -458,7 +458,7 @@ class PlotterC2(Node):
             (r"$SAE_2$", f"{SAE2:.4f}"),
             (r"$SCI_2$", f"{SCI2:.4f}"),
             ("J2", f"{J2:.4f}"),
-            ("J = J1 + J2", f"{J:.4f}"),
+            (r"J=$\frac{1}{2}$(J1 + J2)", f"{J:.4f}"),
         ]
 
         table = Table(self.ax_table2, bbox=[0.05, 0.08, 0.9, 0.84])
