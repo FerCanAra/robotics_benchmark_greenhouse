@@ -29,9 +29,9 @@ Prerequisites
 In order to use the simulator, you must have the following packages installed:
 
 1. [Robot Operating System (ROS 2) Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html). It is recommended to install the full desktop.
-2. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). It is easily installed with the following command:
+2. [MVSim](https://github.com/MRPT/mvsim/). It can be easily installed with:
 ```
-sudo apt install libmrpt-dev mrpt-apps
+sudo apt install ros-$ROS_DISTRO-mvsim
 ```
 3. [Navigation 2 (Nav2)](https://docs.nav2.org/getting_started/index.html). It is easily installed with the following command:
 ```
