@@ -113,28 +113,14 @@
 	<variable name="PAYLOAD" value="$f{$env{PAYLOAD_MASS}}"/>
 	<variable name="mass" value="$f{BASE_MASS + PAYLOAD}"/>
 	<variable name="USE_ADAP_FRICTION" value="$f{$env{USE_ADAPTATIVE_FRICTION}}"/>
-	<!-- ============== PID CONTROLLER VARIABLES ================= -->
-	<param name="kp" value="$env{KP}"/>
-	<param name="ki" value="$env{KI}"/>
-	<param name="kd" value="$env{KD}"/>
-	<param name="n" value="$env{N}"/>
-	<param name="enable_antiwindup" value="$env{ENABLE_ANTIWINDUP}"/>
-	<!-- ============== FEEDFORWARDS VARIABLES ================= -->
-	<param name="enable_feedforward" value="$env{ENABLE_FEEDFORWARD}"/>
-	<param name="k_ff" value="$env{K_FF}"/>
-	<param name="tau_ff" value="$env{TAU_FF}"/>
-	<!-- ============= REFERENE FILTER VARIABLES ================= -->
-	<param name="enable_referencefilter" value="$env{ENABLE_REFERENCEFILTER}"/>
-	<param name="tau_f" value="$env{TAU_F}"/>
-	<param name="n_f" value="$env{N_F}"/>
-	<param name="max_torque" value="$env{MAX_TORQUE}"/>
-
 	<include file="../robots/agricobiot.vehicle.xml" />
 	<!-- ============= VEHICLE DEFINITION ================= -->
 	<vehicle name="AGI" class="agricobiot">
 		<init_pose>10.1 3 90</init_pose>
 
-		<chassis mass="$f{$env{mass}}" />
+		<chassis mass="$f{mass}" />
+		<log_path>./mvsim_logs/</log_path>
+		<auto_start_recording>true</auto_start_recording>
 
 		<include file="../sensors/rplidar-a2.sensor.xml" raytrace_3d="true" sensor_x="0" sensor_y="0" sensor_z="0.45" sensor_yaw="180" sensor_name="laser1" sensor_hz="10.0" />
 		<include file="../sensors/rgbd_camera.sensor.xml" sensor_x="0.55" sensor_y="0" sensor_z="0.6" sensor_period_sec="0.10" show_3d_pointcloud="false" />
@@ -280,5 +266,52 @@
 		</for>
 
 	</for>
+
+	<!-- ================================================================================================ -->
+	<!-- Friction zones as PropertyRegion elements (replacing AdaptativeFriction) -->
+	<!-- ================================================================================================ -->
+	<if condition="$f{USE_ADAP_FRICTION}">
+		<!-- Friction zone: Solid Sand (mu=0.5) -->
+		<element class="property_region">
+			<property_name>friction_mu</property_name>
+			<value_double>0.5</value_double>
+			<x_min>2.0</x_min> <y_min>1.09</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>12.7</y_max> <z_max>3.0</z_max>
+		</element>
+		<element class="property_region">
+			<property_name>friction_C_rr</property_name>
+			<value_double>0.05</value_double>
+			<x_min>2.0</x_min> <y_min>1.09</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>12.7</y_max> <z_max>3.0</z_max>
+		</element>
+
+		<!-- Friction zone: Cement (mu=0.9) -->
+		<element class="property_region">
+			<property_name>friction_mu</property_name>
+			<value_double>0.9</value_double>
+			<x_min>2.0</x_min> <y_min>12.7</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>15.0</y_max> <z_max>3.0</z_max>
+		</element>
+		<element class="property_region">
+			<property_name>friction_C_rr</property_name>
+			<value_double>0.01</value_double>
+			<x_min>2.0</x_min> <y_min>12.7</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>15.0</y_max> <z_max>3.0</z_max>
+		</element>
+
+		<!-- Friction zone: Slim Sand (mu=0.2) -->
+		<element class="property_region">
+			<property_name>friction_mu</property_name>
+			<value_double>0.2</value_double>
+			<x_min>2.0</x_min> <y_min>15.0</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>21.6</y_max> <z_max>3.0</z_max>
+		</element>
+		<element class="property_region">
+			<property_name>friction_C_rr</property_name>
+			<value_double>0.10</value_double>
+			<x_min>2.0</x_min> <y_min>15.0</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>21.6</y_max> <z_max>3.0</z_max>
+		</element>
+	</if>
 
 </mvsim_world>
