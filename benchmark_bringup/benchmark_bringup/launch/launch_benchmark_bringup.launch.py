@@ -337,6 +337,7 @@ def generate_launch_description():
                 "force_publish_vehicle_namespace": LaunchConfiguration(
                     "force_publish_vehicle_namespace"
                 ),
+                "publish_log_topics": True,
             },
         ],
     )
@@ -420,7 +421,7 @@ def generate_launch_description():
     with open(PID_MPC_PARAMS, "r") as f:
         params = yaml.safe_load(f)
 
-    # Aplanar diccionario (PID.KP → CTRL_PID_KP)
+    # Flatten dictionary (PID.KP → CTRL_PID_KP)
     def flatten(prefix, d, out):
         for k, v in d.items():
             key = f"{prefix}_{k}".upper()
@@ -432,11 +433,11 @@ def generate_launch_description():
     flat_params = {}
     flatten("CTRL", params, flat_params)
 
-    # 1) Declarar argumentos LaunchConfiguration para todos
+    # 1) Declare LaunchConfiguration arguments for all params
     for key, val in flat_params.items():
         ld.add_action(DeclareLaunchArgument(key, default_value=str(val)))
 
-    # 2) Crear variables de entorno a partir de esos argumentos
+    # 2) Create environment variables from those arguments
     for key in flat_params.keys():
         env_name = key.replace("CTRL_PID_", "")
         ld.add_action(
@@ -489,28 +490,26 @@ def generate_launch_description():
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="K_FF", value=LaunchConfiguration("CTRL_FEEDFORWARD_K_FF")
+            name="FEEDFORWARD_GAIN",
+            value=LaunchConfiguration("CTRL_FEEDFORWARD_FEEDFORWARD_GAIN"),
         )
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="TAU_FF", value=LaunchConfiguration("CTRL_FEEDFORWARD_TAU_FF")
+            name="ENABLE_REFERENCE_FILTER",
+            value=LaunchConfiguration("CTRL_REFERENCEFILTER_ENABLE_REFERENCE_FILTER"),
         )
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="ENABLE_REFERENCEFILTER",
-            value=LaunchConfiguration("CTRL_REFERENCEFILTER_ENABLE_REFERENCEFILTER"),
+            name="REFERENCE_FILTER_TAU",
+            value=LaunchConfiguration("CTRL_REFERENCEFILTER_REFERENCE_FILTER_TAU"),
         )
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="TAU_F", value=LaunchConfiguration("CTRL_REFERENCEFILTER_TAU_F")
-        )
-    )
-    ld.add_action(
-        SetEnvironmentVariable(
-            name="N_F", value=LaunchConfiguration("CTRL_REFERENCEFILTER_N_F")
+            name="REFERENCE_FILTER_ORDER",
+            value=LaunchConfiguration("CTRL_REFERENCEFILTER_REFERENCE_FILTER_ORDER"),
         )
     )
     ld.add_action(

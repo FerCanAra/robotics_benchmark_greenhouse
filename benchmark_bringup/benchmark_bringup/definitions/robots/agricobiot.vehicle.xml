@@ -67,13 +67,12 @@
 
             <!-- Feedforward Control -->
             <enable_feedforward>$env{ENABLE_FEEDFORWARD}</enable_feedforward>
-            <K_ff>$env{K_FF}</K_ff>
-            <tau_ff>$env{TAU_FF}</tau_ff>
+            <feedforward_gain>$env{FEEDFORWARD_GAIN}</feedforward_gain>
 
             <!-- Reference filter -->
-            <enable_referencefilter>$env{ENABLE_REFERENCEFILTER}</enable_referencefilter>
-            <tau_f>$env{TAU_F}</tau_f>
-            <n_f>$env{N_F}</n_f>
+            <enable_reference_filter>$env{ENABLE_REFERENCE_FILTER}</enable_reference_filter>
+            <reference_filter_tau>$env{REFERENCE_FILTER_TAU}</reference_filter_tau>
+            <reference_filter_order>$env{REFERENCE_FILTER_ORDER}</reference_filter_order>
 
             <!-- Saturation -->
             <I_MAX>400</I_MAX>
@@ -85,24 +84,12 @@
 
     </dynamics>
 
-    <!-- Friction force simulation. You can change -->
-    <if condition="$f{USE_ADAP_FRICTION}">
-        <friction class="AdaptativeFriction">
-            <zones>
-                <zone name="Solid Sand" mu="0.5" C_damping="1.0" Crr="0.05" x_min="2.0" x_max="24.7" y_min="1.09" y_max="12.7"/>
-                <zone name="Cement" mu="0.9" C_damping="0.75" Crr="0.01" x_min="2.0" x_max="24.7" y_min="12.7" y_max="15.0"/>
-                <zone name="Slim Sand" mu="0.2" C_damping="1.25" Crr="0.10" x_min="2" x_max="24.7" y_min="15" y_max="21.6"/>
-            </zones>
-        </friction>
-    </if>
-
-    <if condition="$f{not(USE_ADAP_FRICTION)}">
-        <friction class="default">
-            <mu>0.2</mu>
-            <C_damping>1.25</C_damping>
-            <Crr>0.02</Crr>
-        </friction>
-    </if>
+    <!-- Friction force simulation -->
+    <friction class="default">
+        <mu>0.5</mu>
+        <C_damping>1.0</C_damping>
+        <Crr>0.02</Crr>
+    </friction>
 
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->

@@ -1,12 +1,9 @@
-[submodule "mvsim"]
-	path = mvsim
-	url = https://github.com/MRPT/mvsim.git
-	branch = nav-benchmark-greenhouse
 [submodule "costmap_converter"]
 	path = costmap_converter
 	url = https://github.com/rst-tu-dortmund/costmap_converter.git
 	branch = humble
 [submodule "teb_local_planner"]
 	path = teb_local_planner
-	url = https://github.com/FerCanAra/teb_local_planner_benchmark.git
+	url = https://github.com/ual-arm/teb_local_planner_benchmark.git
 	branch = ros2-humble
+
