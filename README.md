@@ -29,15 +29,18 @@ Prerequisites
 In order to use the simulator, you must have the following packages installed:
 
 1. [Robot Operating System (ROS 2) Humble](https://docs.ros.org/en/humble/Installation/Ubuntu-Install-Debs.html). It is recommended to install the full desktop.
-2. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). It is easily installed with the following command:
-```
-sudo apt install libmrpt-dev mrpt-apps
-```
-3. [Navigation 2 (Nav2)](https://docs.nav2.org/getting_started/index.html). It is easily installed with the following command:
+2. [Navigation 2 (Nav2)](https://docs.nav2.org/getting_started/index.html). It is easily installed with the following command:
 ```
 sudo apt install ros-$ROS_DISTRO-navigation2
 sudo apt install ros-$ROS_DISTRO-nav2-bringup
 ```
+3. Dependencies. The following dependencies are required::
+```
+sudo apt install git
+sudo apt install python3-colcon-common-extensions
+sudo apt install python3-rosdep2
+```
+4. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). They will be installed in the rosdep commands.
 
 Install and build
 --------------------
@@ -50,6 +53,8 @@ git clone --recurse-submodules https://github.com/FerCanAra/robotics_benchmark_g
 cd robotics_benchmark_greenhouse
 git submodule update --init --recursive
 cd ../../..
+rosdep update
+rosdep install --from-paths src -y --ignore-src
 colcon build --symlink install -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
