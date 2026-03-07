@@ -54,6 +54,19 @@ colcon build --symlink install -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE
 source install/setup.bash
 ```
 
+### Python dependencies
+
+The plotter nodes require `matplotlib` and `numpy`. Install them in a virtual environment to avoid version conflicts:
+
+```
+cd ~/ros2_ws/src/robotics_benchmark_greenhouse
+python3 -m venv venv --system-site-packages
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
+Activate the venv before launching the benchmark.
+
 Usage
 --------------------
 The proposed simulator is structured according to a hierarchical control architecture composed of three distinct levels: low-level, mid-level, and high-level control.
@@ -101,7 +114,10 @@ ros2 launch benchmark_bringup launch_benchmark_bringup.launch.py \
   category:=1 \
   payload:=0 \
   terrain_slope:=false \
-  change_terrain:=false
+  change_terrain:=false \
+  num_workers:=0 \
+  num_plants_south:=15 \
+  num_plants_north:=10
 ```
 where:
 
@@ -111,7 +127,13 @@ where:
 
 - `terrain_slope:=false` enables or disables terrain inclination (true or false),
 
-- `change_terrain:=false` enables or disables terrain heterogeneity (true or false).
+- `change_terrain:=false` enables or disables terrain heterogeneity (true or false),
+
+- `num_workers:=0` sets the number of animated human workers walking in the greenhouse corridors (default: 0, disabled). Workers are placed in the north section of the greenhouse, on the opposite side from the robot, to avoid collisions. Each worker walks along their assigned corridor, stopping periodically to simulate plant collection tasks.
+
+- `num_plants_south:=15` sets the number of plants per corridor in the south section (default: 15). Reduce this value to improve rendering performance on slower machines.
+
+- `num_plants_north:=10` sets the number of plants per corridor in the north section (default: 10). Reduce this value to improve rendering performance on slower machines.
 
 Example:
 

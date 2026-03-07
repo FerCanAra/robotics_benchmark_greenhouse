@@ -136,6 +136,18 @@ def generate_launch_description():
     declare_change_terrain_arg = DeclareLaunchArgument(
         "change_terrain", default_value="false"
     )
+    declare_num_workers_arg = DeclareLaunchArgument(
+        "num_workers", default_value="0",
+        description="Number of human workers walking in the greenhouse (0 to disable)"
+    )
+    declare_num_plants_south_arg = DeclareLaunchArgument(
+        "num_plants_south", default_value="15",
+        description="Number of plants per corridor in the south section"
+    )
+    declare_num_plants_north_arg = DeclareLaunchArgument(
+        "num_plants_north", default_value="10",
+        description="Number of plants per corridor in the north section"
+    )
 
     # ---------------------------------------------------------------------------
     #                            VALIDATE ARGUMENTS
@@ -401,6 +413,9 @@ def generate_launch_description():
     ld.add_action(declare_payload_arg)
     ld.add_action(declare_terrain_slope_arg)
     ld.add_action(declare_change_terrain_arg)
+    ld.add_action(declare_num_workers_arg)
+    ld.add_action(declare_num_plants_south_arg)
+    ld.add_action(declare_num_plants_north_arg)
     ld.add_action(validate_action)
     ld.add_action(selected_nodes)
 
@@ -460,6 +475,21 @@ def generate_launch_description():
         SetEnvironmentVariable(
             name="USE_ADAPTATIVE_FRICTION",
             value=LaunchConfiguration("adaptative_friction"),
+        )
+    )
+    ld.add_action(
+        SetEnvironmentVariable(
+            name="NUM_WORKERS", value=LaunchConfiguration("num_workers")
+        )
+    )
+    ld.add_action(
+        SetEnvironmentVariable(
+            name="NUM_PLANTS_SOUTH", value=LaunchConfiguration("num_plants_south")
+        )
+    )
+    ld.add_action(
+        SetEnvironmentVariable(
+            name="NUM_PLANTS_NORTH", value=LaunchConfiguration("num_plants_north")
         )
     )
 
