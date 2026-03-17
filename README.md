@@ -2,7 +2,7 @@
 [![CI Linux](https://github.com/MRPT/mvsim/actions/workflows/build-linux.yml/badge.svg)](https://github.com/MRPT/mvsim/actions/workflows/build-linux.yml)
 [![CI Check clang-format](https://github.com/MRPT/mvsim/actions/workflows/check-clang-format.yml/badge.svg)](https://github.com/MRPT/mvsim/actions/workflows/check-clang-format.yml)
 
-A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouse
+A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouse 🌱 🤖
 ======================================
 This repository provides a standardized, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under realistic operating conditions. The framework combines a physics-based simulation with a high-fidelity greenhouse model and a hierarchical control architecture spanning low-, mid-, and high-level control modules. Representative disturbance scenarios and quantitative performance metrics enable fair, repeatable comparisons of different control strategies, while a plugin-based design enables easy integration of custom controllers and planners. It used [MultiVehicle simulator (MVSim)](https://github.com/MRPT/mvsim), a lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots. It is tailored to the analysis of vehicle dynamics, wheel-ground contact forces, and accurate simulation of typical robot sensors (e.g., 2D and 3D lidars). As a package manager, it is used [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file), a professionally-supported successor of the ROS Navigation Stack deploying the same kinds of technology powering Autonomous Vehicles brought down, optimized, and reworked for mobile and surface robotics. 
 
@@ -10,12 +10,17 @@ This repository provides a standardized, reproducible benchmark for mobile robot
 
 The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS.
 
-Paper citation
+📑 Paper citation
 ------------------
-
-Soon!
-
-License
+```
+@article{canadas2026ros2,
+  title={A ROS2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Robots for Mediterranean Greenhouses},
+  author={Ca{\~n}adas-Ar{\'a}nega, Fernando and Ma{\~n}as-{\'A}lvarez, Francisco J and Moreno, Jos{\'e} C and Blanco-Claraco, Jos{\'e} L and others},
+  journal={arXiv preprint arXiv:2602.15162},
+  year={2026}
+}
+```
+📜 License
 --------------------
 This project is distributed under the **BSD 3-Clause License**.
 
@@ -24,7 +29,7 @@ Project owner: Fernando Cañadas Aránega <fernando.ca@ual.es> (University of Al
 
 See the [LICENSE](LICENSE) file for full license text.
 
-Prerequisites
+⚙️ Prerequisites
 --------------------
 In order to use the simulator, you must have the following packages installed:
 
@@ -42,7 +47,7 @@ sudo apt install python3-rosdep2
 ```
 4. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). They will be installed in the rosdep commands.
 
-Install and build
+🛠️ Install and build
 --------------------
 In order to run the benchmark, the official project repository must be installed. This can be done easily using the following commands.
 
@@ -59,7 +64,7 @@ colcon build --symlink install -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE
 source install/setup.bash
 ```
 
-Usage
+🚀 Usage
 --------------------
 The proposed simulator is structured according to a hierarchical control architecture composed of three distinct levels: low-level, mid-level, and high-level control. 
 
@@ -125,7 +130,7 @@ Example:
 For a complete description of the simulator architecture, control schemes, evaluation metrics, and experimental methodology, the reader is referred to the associated journal/conference article, which provides a detailed and rigorous explanation of the benchmark framework.
 
 
-Performance Analysis and Data Logging
+📊 Performance Analysis and Data Logging
 --------------------
 During simulation execution, real-time performance plots are displayed, allowing the user to continuously assess the behavior of the implemented control law. These plots provide immediate qualitative insight into the system response and controller performance under the selected operating conditions. In addition, once the simulation finishes, the benchmark automatically generates a CSV data file containing the relevant performance variables. This file is saved in the directory from which the simulation was launched and includes the data required for offline analysis, post-processing, and quantitative evaluation (```$pwd/result/cetagory_X/yyyy_mm_dd_hh_mm_ss.csv```).
 
