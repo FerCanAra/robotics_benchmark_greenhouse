@@ -129,6 +129,16 @@ Performance Analysis and Data Logging
 --------------------
 During simulation execution, real-time performance plots are displayed, allowing the user to continuously assess the behavior of the implemented control law. These plots provide immediate qualitative insight into the system response and controller performance under the selected operating conditions. In addition, once the simulation finishes, the benchmark automatically generates a CSV data file containing the relevant performance variables. This file is saved in the directory from which the simulation was launched and includes the data required for offline analysis, post-processing, and quantitative evaluation (```$pwd/result/cetagory_X/yyyy_mm_dd_hh_mm_ss.csv```).
 
+🖥️ Virtual Machine
+
+A fully configured virtual machine is provided to ensure easy deployment and reproducibility across different operating systems. This virtual environment includes all the necessary dependencies and configurations required to run the project without compatibility issues.
+
+The repository contains:
+--------------------
+A [virtual machine]() image ready to be installed on any operating system (Windows, IOS, etc.).
+
+A step-by-step installation guide, explaining how to set up and run the virtual machine from scratch on your local system.
+
 Build matrix status
 --------------------
 
