@@ -136,12 +136,9 @@ During simulation execution, real-time performance plots are displayed, allowing
 
 🖥️ Virtual Machine
 --------------------
-A fully configured virtual machine is provided to ensure easy deployment and reproducibility across different operating systems. This virtual environment includes all the necessary dependencies and configurations required to run the project without compatibility issues.
+A fully configured virtual machine is provided to ensure easy deployment and reproducibility across different operating systems (Windows and IOS). To set up this virtual machine, follow these [instructions](https://github.com/FerCanAra/IIR_ROS2_Tutorial/blob/main/docs/vmwaresetup.md). They first detail how to install VMware Pro 17 for free on Ubuntu 22.04, followed by configuring the ROS 2 Humble environment and installing the benchmark.
 
-The repository contains:
-- A [virtual machine]() image ready to be installed on any operating system (Windows, IOS, etc.).
-- A step-by-step installation guide, explaining how to set up and run the virtual machine from scratch on your local system.
-
+[Install and configuration vmware pro 17](docs/vmwaresetup.md)
 Build matrix status
 --------------------
 
