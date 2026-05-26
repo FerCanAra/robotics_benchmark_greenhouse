@@ -8,7 +8,7 @@ This repository provides a standardized, reproducible benchmark for mobile robot
 
 <img width="400" height="300" alt="Mvsim_greenhouse" src="https://github.com/user-attachments/assets/d35b3e2f-8a23-4ca4-bbf0-4aa99508d0f5" /> <img width="400" height="300" alt="Vista_interna" src="https://github.com/user-attachments/assets/8d4e95b9-e20c-42a8-9b1c-aface9250e65" />
 
-The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS.
+The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. Tu tambien puedes usarlo en Windows and MAC instalando una [maquina virtual](#mi-marcador-secreto)
 
 📑 Paper citation
 ------------------
@@ -134,11 +134,10 @@ For a complete description of the simulator architecture, control schemes, evalu
 --------------------
 During simulation execution, real-time performance plots are displayed, allowing the user to continuously assess the behavior of the implemented control law. These plots provide immediate qualitative insight into the system response and controller performance under the selected operating conditions. In addition, once the simulation finishes, the benchmark automatically generates a CSV data file containing the relevant performance variables. This file is saved in the directory from which the simulation was launched and includes the data required for offline analysis, post-processing, and quantitative evaluation (```$pwd/result/cetagory_X/yyyy_mm_dd_hh_mm_ss.csv```).
 
-🖥️ Virtual Machine
+🖥️ Virtual Machine <a name="mi-marcador-secreto"></a>
 --------------------
 A fully configured virtual machine is provided to ensure easy deployment and reproducibility across different operating systems (Windows and IOS). To set up this virtual machine, follow these [instructions](https://github.com/FerCanAra/IIR_ROS2_Tutorial/blob/main/docs/vmwaresetup.md). They first detail how to install VMware Pro 17 for free on Ubuntu 22.04, followed by configuring the ROS 2 Humble environment and installing the benchmark.
 
-[Install and configuration vmware pro 17](docs/vmwaresetup.md)
 Build matrix status
 --------------------
 
