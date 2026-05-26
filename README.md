@@ -10,7 +10,7 @@ This repository provides a standardized, reproducible benchmark for mobile robot
 
 The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. You can also run it on Windows and Mac by installing a [virtual machine](#mi-marcador-secreto).
 
-**Note: tested in 26/05/2026**
+> **Note:** Process tested with on 26th May 2026.
 
 📑 Paper citation
 ------------------
