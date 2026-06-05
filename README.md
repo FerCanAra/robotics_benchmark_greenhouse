@@ -62,7 +62,7 @@ git submodule update --init --recursive
 cd ../../..
 rosdep update
 rosdep install --from-paths src -y --ignore-src
-colcon build --symlink install -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
 
