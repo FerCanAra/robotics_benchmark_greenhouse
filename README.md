@@ -17,7 +17,7 @@ The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. You can also run
 ```
 @article{canadas2026ros2,
   title={A ROS2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Robots for Mediterranean Greenhouses},
-  author={Ca{\~n}adas-Ar{\'a}nega, Fernando and Ma{\~n}as-{\'A}lvarez, Francisco J and Moreno, Jos{\'e} C and Blanco-Claraco, Jos{\'e} L and others},
+  author={Ca{\~n}adas-Ar{\'a}nega, Fernando and Ma{\~n}as-{\'A}lvarez, Francisco J and Guzmán, Jos{\'e} L Moreno, Jos{\'e} C and Blanco-Claraco, Jos{\'e} L and others},
   journal={arXiv preprint arXiv:2602.15162},
   year={2026}
 }
