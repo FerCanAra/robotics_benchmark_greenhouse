@@ -65,6 +65,7 @@ rosdep install --from-paths src -y --ignore-src
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
+> **Note:** Si tienes un error relacionado con la declaracion de F_friction_lon_act, ejecuta este comando  ```sed -i '/double Crr_;/a \ \ \ \ double F_friction_lon_act;' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/include/mvsim/FrictionModels/Adaptativefriction.h``` and ```sed -i '/Total robot mass = %.3f/s/^/\/\//' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/src/VehicleDynamics/*.cpp ```.
 
 🚀 Usage
 --------------------
