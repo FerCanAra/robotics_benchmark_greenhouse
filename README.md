@@ -166,9 +166,9 @@ Build matrix status
 
 <div align="center">
 
-<img src="https://mrpt.github.io/imgs/mvsim_logo-bg-150px.png" alt="MVSim logo" width="150"/>
-
 # MultiVehicle Simulator (MVSim)
+
+<img src="https://mrpt.github.io/imgs/mvsim_logo-bg-150px.png" alt="MVSim logo" width="150"/>
 
 **Lightweight, realistic 2.5D dynamics simulator for mobile robots and multi-agent research**
 
@@ -182,7 +182,7 @@ Build matrix status
   
 # Navigation2 (Nav2)
 
-<img width="351" height="635" alt="image" src="https://github.com/user-attachments/assets/4d7ef1fc-2977-49c5-b2b5-43d74d16de81" />
+<img width="120" height="210" alt="image" src="https://github.com/user-attachments/assets/4d7ef1fc-2977-49c5-b2b5-43d74d16de81" />
 
 
 | Package | humble Source | humble Debian | jazzy Source | jazzy Debian | kilted Source | kilted Debian |
