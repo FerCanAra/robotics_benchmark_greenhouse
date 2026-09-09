@@ -48,6 +48,9 @@ Project owner: Fernando Cañadas Aránega <fernando.ca@ual.es> (University of Al
 
 See the [LICENSE](LICENSE) file for full license text.
 
+*International LICENCE: Intellectual property patent no. 2607246522198 held by [Safe Creative](https://www.safecreative.org/es)*
+
+
 ⚙️ Prerequisites
 --------------------
 In order to use the simulator, you must have the following packages installed:
