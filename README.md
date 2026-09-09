@@ -15,14 +15,27 @@ The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. You can also run
 
 > **Note:** Process tested with on 10th June 2026.
 
-📑 Paper citation
+📑 Citation
 ------------------
+## 📑 Paper citation
 ```
 @article{canadas2026ros2,
   title={A ROS2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Robots for Mediterranean Greenhouses},
   author={Ca{\~n}adas-Ar{\'a}nega, Fernando and Ma{\~n}as-{\'A}lvarez, Francisco J and Guzmán, Jos{\'e} L Moreno, Jos{\'e} C and Blanco-Claraco, Jos{\'e} L and others},
   journal={arXiv preprint arXiv:2602.15162},
   year={2026}
+}
+```
+## 💻 Software citation
+------------------
+```
+@software{agricultural_benchmark,
+  author  = {Ca{\~n}adas-Ar{\'a}nega, Fernando},
+  title   = {A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouse},
+  version = {1.0.1},
+  year    = {2026},
+  doi     = {https://doi.org/10.5281/zenodo.22679881},
+  url     = {https://github.com/ual-arm/robodimm/tree/v1.1.0}
 }
 ```
 📜 License
