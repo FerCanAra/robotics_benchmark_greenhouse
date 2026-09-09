@@ -18,6 +18,7 @@ The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. You can also run
 📑 Citation
 ------------------
 *Paper citation*
+------------------
 ```
 @article{canadas2026ros2,
   title={A ROS2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Robots for Mediterranean Greenhouses},
