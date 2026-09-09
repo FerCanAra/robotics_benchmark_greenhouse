@@ -161,9 +161,6 @@ During simulation execution, real-time performance plots are displayed, allowing
 --------------------
 A fully configured virtual machine is provided to ensure easy deployment and reproducibility across different operating systems (Windows and IOS). To set up this virtual machine, follow these [instructions](https://github.com/FerCanAra/IIR_ROS2_Tutorial/blob/main/docs/vmwaresetup.md). They first detail how to install VMware Pro 17 for free on Ubuntu 22.04, followed by configuring the ROS 2 Humble environment and installing the benchmark.
 
-Build matrix status
---------------------
-
 <div align="center">
 
 # MultiVehicle Simulator (MVSim)
@@ -184,6 +181,7 @@ Build matrix status
 
 <img width="120" height="210" alt="image" src="https://github.com/user-attachments/assets/4d7ef1fc-2977-49c5-b2b5-43d74d16de81" />
 
+</div>
 
 | Package | humble Source | humble Debian | jazzy Source | jazzy Debian | kilted Source | kilted Debian |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
@@ -224,4 +222,3 @@ Build matrix status
 (https://build.ros2.org/job/Ksrc_un__nav2_voxel_grid__ubuntu_noble__source/badge/icon)](https://build.ros2.org/job/Ksrc_un__nav2_voxel_grid__ubuntu_noble__source/) | [![Build Status](https://build.ros2.org/job/Kbin_un64__nav2_voxel_grid__ubuntu_noble_amd64__binary/badge/icon)](https://build.ros2.org/job/Kbin_un64__nav2_voxel_grid__ubuntu_noble_amd64__binary/) |
 | nav2_waypoint_follower | [![Build Status](https://build.ros2.org/job/Hsrc_uj__nav2_waypoint_follower__ubuntu_jammy__source/badge/icon)](https://build.ros2.org/job/Hsrc_uj__nav2_waypoint_follower__ubuntu_jammy__source/) | [![Build Status](https://build.ros2.org/job/Hbin_uj64__nav2_waypoint_follower__ubuntu_jammy_amd64__binary/badge/icon)](https://build.ros2.org/job/Hbin_uj64__nav2_waypoint_follower__ubuntu_jammy_amd64__binary/) | [![Build Status](https://build.ros2.org/job/Jsrc_un__nav2_waypoint_follower__ubuntu_noble__source/badge/icon)](https://build.ros2.org/job/Jsrc_un__nav2_waypoint_follower__ubuntu_noble__source/) | [![Build Status](https://build.ros2.org/job/Jbin_un64__nav2_waypoint_follower__ubuntu_noble_amd64__binary/badge/icon)](https://build.ros2.org/job/Jbin_un64__nav2_waypoint_follower__ubuntu_noble_amd64__binary/) | [![Build Status](https://build.ros2.org/job/Ksrc_un__nav2_waypoint_follower__ubuntu_noble__source/badge/icon)](https://build.ros2.org/job/Ksrc_un__nav2_waypoint_follower__ubuntu_noble__source/) | [![Build Status](https://build.ros2.org/job/Kbin_un64__nav2_waypoint_follower__ubuntu_noble_amd64__binary/badge/icon)](https://build.ros2.org/job/Kbin_un64__nav2_waypoint_follower__ubuntu_noble_amd64__binary/) |
 
-</div>
