@@ -1,6 +1,7 @@
 A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouse 🌱 
 ======================================
-
+[![arXiv](https://arxiv.org/abs/2602.15162)](https://arxiv.org)
+[![Last Updated](https://img.shields.io/badge/last%20updated-2026--09-blue)](.)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22679881.svg)](https://doi.org/10.5281/zenodo.22679881)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 
