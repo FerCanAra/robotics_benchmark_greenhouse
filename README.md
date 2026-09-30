@@ -14,7 +14,7 @@ This repository provides a standardized, reproducible benchmark for mobile robot
 
 The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. You can also run it on Windows and Mac by installing a [virtual machine](#mi-marcador-secreto).
 
-> **Note:** Process tested with on 10th June 2026.
+> **Note:** Process tested with on 30th September 2026.
 
 📑 Citation
 ------------------
@@ -86,7 +86,7 @@ rosdep install --from-paths src -y --ignore-src
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
-> **Note:** If you have an error related to the F_friction_lon_act declaration, run this command: ```sed -i '/double Crr_;/a \ \ \ \ double F_friction_lon_act;' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/include/mvsim/FrictionModels/Adaptativefriction.h && sed -i '/Total robot mass = %.3f/s/^/\/\//' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/src/VehicleDynamics/*.cpp ```.
+> **Note:** If you have an error related to the F_friction_lon_act declaration, run this command: ```sed -i '/double Crr_;/a \ \ \ \ double F_friction_lon_act;' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/include/mvsim/FrictionModels/AdaptativeFriction.h && sed -i '/Total robot mass = %.3f/s/^/\/\//' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/src/VehicleDynamics/*.cpp ```.
 
 🚀 Usage
 --------------------
