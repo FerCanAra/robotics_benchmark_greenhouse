@@ -80,7 +80,7 @@ cd ~/ros2_ws/src
 git clone --recurse-submodules https://github.com/FerCanAra/robotics_benchmark_greenhouse.git
 cd robotics_benchmark_greenhouse
 git submodule update --init --recursive
-cd ../../..
+cd ../..
 rosdep update
 rosdep install --from-paths src -y --ignore-src
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
