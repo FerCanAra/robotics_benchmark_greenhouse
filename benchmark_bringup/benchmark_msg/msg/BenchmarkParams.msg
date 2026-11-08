@@ -1,3 +1,4 @@
+float64 sim_time        # Simulated time [s] at which the message was generated
 float64 kp
 float64 ki
 float64 kd
@@ -44,5 +45,4 @@ float64 torque_l
 float64 torque_r
 float64 pitch
 float64 torque_slope
-float64 fmax
 float64 max_friction

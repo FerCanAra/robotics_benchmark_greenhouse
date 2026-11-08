@@ -26,7 +26,7 @@ Feedforward:
   tau_ff: 0.0 # Feedforward time constant
 
 ReferenceFilter:
-  enable_referencefilter: true # Enable reference filter
+  enable_referencefilter: false # Enable reference filter (not used in the reference case)
   tau_f: 0.0 # Time constant for reference filter
   n_f: 1 # Filter order
 

@@ -34,7 +34,7 @@ controller_server:
       publish_feedback: False # If True, feedback information is published during execution.
       # Robot restrictions for MPC
       max_vel_x: 0.5
-      max_vel_x_backwards: 0.35
+      max_vel_x_backwards: 0.1 # Forward driving along the aisles; small reverse only to escape (same as MPPI vx_min).
       max_vel_theta: 1.5
       acc_lim_x: 2.5
       acc_lim_theta: 3.2
@@ -65,7 +65,7 @@ controller_server:
       weight_acc_lim_x: 0.3
       weight_acc_lim_theta: 5.0
       weight_kinematics_nh: 1000.0 # Weight to penalize violations of non-holonomic kinematics.
-      weight_kinematics_forward_drive: 10.0 # Weight to penalize backward movements.
+      weight_kinematics_forward_drive: 1000.0 # Strongly penalise backward motion (with 10, TEB reversed 3 m along the headland instead of turning).
       weight_kinematics_turning_radius: 0.5 # Weight to penalize small turning radii.
       weight_optimaltime: 2.0 # Weight to minimize the total time of the trajectory.
       weight_shortest_path: 0.5 # Weight to minimize the length of the trajectory.
@@ -74,7 +74,7 @@ controller_server:
       weight_viapoint: 100.0 # Weight to follow the waypoints of the global plan.
       weight_adapt_factor: 2.0 # Adaptation factor to adjust weights during optimization.
       # Homotopy Class Planner
-      enable_homotopy_class_planning: True # Activates the Homotopy Class Planner, which seeks multiple topologically different trajectories (e.g., going around an obstacle on the left or right).
+      enable_homotopy_class_planning: False # Disabled: inside the aisles the alternative classes (through the gaps between plants) made TEB switch sides and hesitate. A single class keeps the comparison with the other controllers fair.
       enable_multithreading: True # Enables multithreading for the homotopy class planner to speed up computation.
       max_number_classes: 3 # Maximum number of homotopy classes (different trajectory options) to consider.
       selection_cost_hysteresis: 3.0 # Hysteresis: prevents switching trajectories due to small differences.
@@ -99,6 +99,6 @@ planner_server:
   ros__parameters:
     GridBased:
       tolerance: 1.0
-      how_many_corners: 10
+      how_many_corners: 8
       w_euc_cost: 1.0
       w_traversal_cost: 2.0

@@ -11,6 +11,7 @@
 	<!-- General simulation options -->
 	<simul_timestep>0.001</simul_timestep>	<!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
 	<joystick_enabled>true</joystick_enabled>
+	<random_seed>$env{MVSIM_RANDOM_SEED}</random_seed>	<!-- Seed of the sensor-noise generators (set by the launch argument seed:=N; -1 = random) -->
 
 	<georeference>
 		<latitude>36.894718</latitude>
@@ -137,9 +138,15 @@
 		<chassis mass="$f{$env{mass}}" />
 
 		<include file="../sensors/rplidar-a2.sensor.xml" raytrace_3d="true" sensor_x="0" sensor_y="0" sensor_z="0.45" sensor_yaw="180" sensor_name="laser1" sensor_hz="10.0" />
-		<include file="../sensors/rgbd_camera.sensor.xml" sensor_x="0.55" sensor_y="0" sensor_z="0.6" sensor_period_sec="0.10" show_3d_pointcloud="false" />
-		<include file="../sensors/gnss.sensor.xml" sensor_x="0.0" sensor_y="0.0" sensor_z="0.25" sensor_period_sec="1.0" sensor_name="gps1" sensor_horizontal_std_noise="1.5" sensor_vertical_std_noise="2.5" />
-		<include file="../sensors/imu.sensor.xml" sensor_x="0.0" sensor_y="0.05" sensor_z="0.145" sensor_period_sec="$f{1/200.0}" />
+		<!-- RGB-D camera disabled: it is not used by any benchmark category and it is the
+		     heaviest sensor (640x480 RGB + depth rendered in OpenGL at 10 Hz, plus a ~300k-point
+		     PointCloud2 published to ROS). The physics step waits for the OpenGL sensors, so it
+		     prevented MVSim from running in real time. Uncomment only for visualization. -->
+		<!-- <include file="../sensors/rgbd_camera.sensor.xml" sensor_x="0.55" sensor_y="0" sensor_z="0.6" sensor_period_sec="0.10" show_3d_pointcloud="false" /> -->
+		<!-- GNSS and IMU disabled: not used by any benchmark category. The IMU alone published
+		     200 TF messages/s (base_link -> imu) plus 200 Imu messages/s. Uncomment if needed. -->
+		<!-- <include file="../sensors/gnss.sensor.xml" sensor_x="0.0" sensor_y="0.0" sensor_z="0.25" sensor_period_sec="1.0" sensor_name="gps1" sensor_horizontal_std_noise="1.5" sensor_vertical_std_noise="2.5" /> -->
+		<!-- <include file="../sensors/imu.sensor.xml" sensor_x="0.0" sensor_y="0.05" sensor_z="0.145" sensor_period_sec="$f{1/200.0}" /> -->
 
 	</vehicle>
 
@@ -194,11 +201,14 @@
 		<mass>5</mass>
 		<!-- <shape_from_visual/>  automatic shape,zmin,zmax from 3D mesh-->
 		<!--  Custom visualization model. 3D model filename to load (local or remote http://uri ) -->
+		<!-- Collision box matched to the canopy of tomato_plant.dae seen by the LiDAR
+		     at 0.4-0.5 m height (about +-0.3 m). The former +-0.5 m box produced
+		     contacts against an invisible wall 0.15-0.25 m beyond the leaves. -->
 		<shape>
-			<pt>-0.5 -0.5</pt>
-			<pt>-0.5  0.5</pt>
-			<pt> 0.5  0.5</pt>
-			<pt> 0.5 -0.5</pt>
+			<pt>-0.3 -0.3</pt>
+			<pt>-0.3  0.3</pt>
+			<pt> 0.3  0.3</pt>
+			<pt> 0.3 -0.3</pt>
 		</shape>
 		<visual>
 			<model_uri>tomato_plant.dae</model_uri>

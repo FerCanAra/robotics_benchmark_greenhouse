@@ -26,3 +26,9 @@ log/
 .DS_Store
 Thumbs.db
 mrpt/
+__pycache__/
+*.pyc
+*.zip
+result/
+results/
+mrpt_ros_bridge/

@@ -14,6 +14,52 @@
 # This is a configuration file; do not modify it. To change MPC parameters, go to:
 # benchmark_bringup/benchmark_bringup/control_params/c2_mpc_teb_params.yaml
 
+# ---------------------------------------------------------------------------
+# Localization. Selected with the launch argument  localization:=fake|amcl
+#  - fake (default): MVSim publishes the ground-truth pose (map->odom and
+#    /amcl_pose). AMCL is kept alive only because Nav2 (BasicNavigator) needs it,
+#    but the launch file disables its TF broadcast and its scan input, so it
+#    never publishes map->odom (no duplicated transforms).
+#  - amcl: MVSim fake localization is disabled and AMCL estimates the pose from
+#    the 2D LiDAR (/laser1) with the parameters below.
+# ---------------------------------------------------------------------------
+amcl:
+  ros__parameters:
+    use_sim_time: False
+    alpha1: 0.2
+    alpha2: 0.2
+    alpha3: 0.2
+    alpha4: 0.2
+    alpha5: 0.2
+    base_frame_id: "base_link"
+    global_frame_id: "map"
+    odom_frame_id: "odom"
+    scan_topic: /laser1
+    tf_broadcast: True
+    set_initial_pose: False   # initial pose published by odom_mvsim2teb
+    laser_model_type: "likelihood_field"
+    laser_likelihood_max_dist: 2.0
+    laser_max_range: 16.0
+    laser_min_range: -1.0
+    max_beams: 60
+    max_particles: 2000
+    min_particles: 500
+    pf_err: 0.05
+    pf_z: 0.99
+    recovery_alpha_fast: 0.0
+    recovery_alpha_slow: 0.0
+    resample_interval: 1
+    robot_model_type: "nav2_amcl::DifferentialMotionModel"
+    save_pose_rate: 0.5
+    sigma_hit: 0.2
+    transform_tolerance: 1.0
+    update_min_a: 0.2
+    update_min_d: 0.25
+    z_hit: 0.5
+    z_max: 0.05
+    z_rand: 0.5
+    z_short: 0.05
+
 bt_navigator:
   ros__parameters:
     use_sim_time: False
@@ -170,7 +216,7 @@ controller_server:
       weight_viapoint: 50.0 # Weight to follow the waypoints of the global plan.
       weight_adapt_factor: 2.0 # Adaptation factor to adjust weights during optimization.
       # Homotopy Class Planner
-      enable_homotopy_class_planning: True # Activates the Homotopy Class Planner, which seeks multiple topologically different trajectories (e.g., going around an obstacle on the left or right).
+      enable_homotopy_class_planning: False # Disabled: inside the aisles the alternative classes (through the gaps between plants) made TEB switch sides and hesitate. A single class keeps the comparison with the other controllers fair.
       enable_multithreading: True # Enables multithreading for the homotopy class planner to speed up computation.
       max_number_classes: 4 # Maximum number of homotopy classes (different trajectory options) to consider.
       selection_cost_hysteresis: 5.0 # Hysteresis: prevents switching trajectories due to small differences.
@@ -203,8 +249,8 @@ local_costmap:
       plugins: ["voxel_layer", "inflation_layer"]
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.5
-        inflation_radius: 0.8
+        cost_scaling_factor: 2.5
+        inflation_radius: 1.0   # conservative: keeps the robot centred in the aisle
       voxel_layer:
         plugin: "nav2_costmap_2d::VoxelLayer"
         enabled: True
@@ -266,8 +312,8 @@ global_costmap:
         map_subscribe_transient_local: True
       inflation_layer:
         plugin: "nav2_costmap_2d::InflationLayer"
-        cost_scaling_factor: 3.5
-        inflation_radius: 0.5
+        cost_scaling_factor: 2.0   # slow decay: paths prefer the centre of the aisle
+        inflation_radius: 1.0   # conservative (was 0.5 = only 0.1 m beyond the robot radius)
       always_send_full_costmap: True
 
 map_server:
