@@ -5,16 +5,26 @@ A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Medi
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22679881.svg)](https://doi.org/10.5281/zenodo.22679881)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 
-This repository provides a standardized, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under realistic operating conditions. The framework combines a physics-based simulation with a greenhouse model and a hierarchical control architecture spanning low-, mid-, and high-level control modules. Representative disturbance scenarios and quantitative performance metrics enable fair, repeatable comparisons of different control strategies, while a plugin-based design enables easy integration of custom controllers and planners. It used [MultiVehicle simulator (MVSim)](https://github.com/MRPT/mvsim), a lightweight, realistic dynamical simulator for 2D ("2.5D") vehicles and robots. It is tailored to the analysis of vehicle dynamics, wheel-ground contact forces, and accurate simulation of typical robot sensors (e.g., 2D and 3D lidars). As a package manager, it is used [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file), a professionally-supported successor of the ROS Navigation Stack deploying the same kinds of technology powering Autonomous Vehicles brought down, optimized, and reworked for mobile and surface robotics. 
+This repository provides a standardised, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under representative operating conditions. The framework combines a physics-based simulation of a real Mediterranean greenhouse (Agroconnect, Almería, Spain) with a hierarchical control architecture spanning low-, mid- and high-level control. Parameterised disturbances (payload, terrain type and slope), normalised performance indices, task-level indicators and a statistical protocol enable fair, repeatable comparisons of control strategies, while a plugin-based design allows custom controllers and planners to be integrated without modifying the benchmark. It used [MultiVehicle simulator (MVSim)](https://github.com/MRPT/mvsim), a lightweight dynamical simulator for 2D ("2.5D") vehicles that models wheel–ground contact forces and typical robot sensors, and [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file) for the mid- and high-level layers. The complete benchmark runs in real time using less than two CPU cores, so it can be used on standard computers.
 
 <img src="./docs/BenchmarkCat.gif" width="700" height="600">
 
 <!-- 
 <img width="400" height="300" alt="Mvsim_greenhouse" src="https://github.com/user-attachments/assets/d35b3e2f-8a23-4ca4-bbf0-4aa99508d0f5" /> <img width="400" height="300" alt="Vista_interna" src="https://github.com/user-attachments/assets/8d4e95b9-e20c-42a8-9b1c-aface9250e65" />-->
 
-The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. You can also run it on Windows and Mac by installing a [virtual machine](#mi-marcador-secreto).
+The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also be run on Windows and macOS by installing a [virtual machine](#virtual-machine).
 
-> **Note:** Process tested with on 30th September 2026.
+> **Note:** Version v1.1.0 corresponds to the revised version of the associated article. Process tested on 8th November 2026.
+
+📑 What's new in v1.1.0
+------------------
+
+- Alternative controllers and planners: besides the reference stack (PI + TEB + Lazy θ*), Category 2 can be run with MPPI and Regulated Pure Pursuit, and Category 3 with Smac Planner 2D and NavFn, selected with launch arguments. All the controllers share the same limits (0.5 m/s, 1.0 rad/s, 1.0 rad/s²).
+- Common reference in Category 2: the four waypoints are joined into a fixed reference path that is sent directly to the controller (FollowPath), so every controller follows exactly the same reference.
+- Redesigned metrics: time-averaged indices of normalised signals (SAE, SCI), relative indices with respect to the reference stack, and task-level indicators (success, time to goal, path length, clearance, contacts).
+- Campaign tools: scripts to run complete campaigns with a real-time validity check and to compute the tables, heatmaps and statistical comparisons (tools/).
+- Simulator fixes: odometry twist published by MVSim and lateral friction factor for skid-steer vehicles.
+- Reference results: the 336 runs of the reference case are archived in [Zenodo](https://doi.org/10.5281/zenodo.22679881).
 
 📑 Citation
 ------------------
@@ -33,11 +43,11 @@ The simulator has been tested on ROS2 Humble, Ubuntu 22.04 LTS. You can also run
 ```
 @software{agricultural_benchmark,
   author  = {Ca{\~n}adas-Ar{\'a}nega, Fernando},
-  title   = {A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouse},
-  version = {1.0.1},
+  title   = {A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouses},
+  version = {1.1.0},
   year    = {2026},
-  doi     = {https://doi.org/10.5281/zenodo.22679881},
-  url     = {https://github.com/FerCanAra/robotics_benchmark_greenhouse/tree/main}
+  doi     = {10.5281/zenodo.22679881},
+  url     = {https://github.com/FerCanAra/robotics_benchmark_greenhouse}
 }
 ```
 📜 License
@@ -86,23 +96,23 @@ rosdep install --from-paths src -y --ignore-src
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
-> **Note:** If you have an error related to the F_friction_lon_act declaration, run this command: ```sed -i '/double Crr_;/a \ \ \ \ double F_friction_lon_act;' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/include/mvsim/FrictionModels/AdaptativeFriction.h && sed -i '/Total robot mass = %.3f/s/^/\/\//' src/robotics_benchmark_greenhouse/mvsim/modules/simulator/src/VehicleDynamics/*.cpp ```.
+To use exactly the version of the article, check out the release tag before building: git checkout v1.1.0 && git submodule update --recursive.
 
 🚀 Usage
 --------------------
-The proposed simulator is structured according to a hierarchical control architecture composed of three distinct levels: low-level, mid-level, and high-level control. 
+The benchmark is structured according to a hierarchical control architecture with three levels. A new strategy can be evaluated at the level it targets while the other two levels remain fixed to the reference stack.
 
 #### Control layers
 
-1. **Low-level**: The low-level control layer focuses on the internal control of the robot actuators, specifically the motor dynamics. This level is implemented directly within the MVSim simulation environment, where the robot’s physical parameters and control gains can be configured through dedicated [PID parameter](benchmark_bringup/benchmark_bringup/control_params/c1_pid_params.yaml) file. This layer is responsible for translating velocity commands into motor torques while accounting for realistic vehicle dynamics, including wheel–ground interactions. The low-level control scheme adopted in the benchmark is illustrated in the corresponding block diagram provided in the accompanying article.
+1. **Low level (PI with anti-windup, Feedforward and Reference Filter)**: wheel-speed control of the motors, implemented inside the MVSim vehicle model [PID parameter](benchmark_bringup/benchmark_bringup/control_params/c1_pid_params.yaml) file. This layer is responsible for translating velocity commands into motor torques while accounting for realistic vehicle dynamics, including wheel–ground interactions. The low-level control scheme adopted in the benchmark is illustrated in the corresponding block diagram provided in the accompanying article.
 
 <img width="800" height="300" alt="PID" src="https://github.com/user-attachments/assets/a970ae16-e4de-4d24-9faf-6c294e1ebfd0" />
 
-2. **Mid-level**: The mid-level control layer addresses trajectory tracking, enabling the robot to follow a sequence of waypoints generated by the high-level planner. For this purpose, the benchmark integrates the [Timed Elastic Band (TEB-MPC)](https://github.com/FerCanAra/teb_local_planner_benchmark) local planner, managed through the Nav2 framework. The TEB-MPC module operates as a plugin-based component, allowing the user to fully replace or tune its [MPC parameters](benchmark_bringup/benchmark_bringup/control_params/c2_mpc_teb_params.yaml). This design supports the evaluation of different trajectory-following strategies under identical environmental and disturbance conditions. The mid-level control architecture is depicted in the corresponding control diagram.
+2. **Mid-level (path following)**: Nav2 controller plugin. The reference controller is the [Timed Elastic Band (TEB-MPC)](https://github.com/FerCanAra/teb_local_planner_benchmark) local planner, managed through the Nav2 framework. The TEB-MPC module operates as a plugin-based component, allowing the user to fully replace or tune its [MPC parameters](benchmark_bringup/benchmark_bringup/control_params/c2_mpc_teb_params.yaml). This design supports the evaluation of different trajectory-following strategies under identical environmental and disturbance conditions. The mid-level control architecture is depicted in the corresponding control diagram.
 
 <img width="800" height="300"  alt="MPC" src="https://github.com/user-attachments/assets/1d0c3d82-67cf-48c2-a0e4-5736f8eb0600" />
 
-3. **High-level**: The high-level control layer focuses on global path planning, computing efficient trajectories within the environment while accounting for obstacles and workspace constraints. In this benchmark, the [Lazzy Theta star](https://idm-lab.org/bib/abstracts/papers/aaai10b.pdf) global planner is employed and integrated via the Nav2 framework. All [planning parameters](benchmark_bringup/benchmark_bringup/control_params/c3_theta_start_params.yaml) can be modified, enabling users to analyze the impact of high-level planning decisions on overall navigation performance. The complete high-level control structure is presented in the associated schematic.
+3. **High-level (path planning):**: Nav2 planner plugin. The reference planner is [Lazzy Theta star](https://idm-lab.org/bib/abstracts/papers/aaai10b.pdf) global planner is employed and integrated via the Nav2 framework. All [planning parameters](benchmark_bringup/benchmark_bringup/control_params/c3_theta_start_params.yaml) can be modified, enabling users to analyze the impact of high-level planning decisions on overall navigation performance. The complete high-level control structure is presented in the associated schematic.
 
 <img width="800" height="300" alt="Planner" src="https://github.com/user-attachments/assets/1c7a3c83-0300-4611-8746-6d5256683a16" />
 
@@ -110,21 +120,24 @@ The proposed simulator is structured according to a hierarchical control archite
 
 To support users with different expertise levels and research objectives, the benchmark defines three evaluation categories:
 
-- **Category 1**: Intended for users focusing on classical control techniques, such as Proportional–Integral–Derivative (PID) control and basic advanced controllers. This category is particularly suitable for undergraduate-level education.
+- **Category 1 (low level)**: a fixed sequence of velocity commands; evaluates wheel-speed tracking and control effort. Suitable for undergraduate courses on classical control.
 
-- **Category 2**: Designed for users working with model-based predictive control techniques, incorporating fundamental robotic modeling concepts. This category is well suited for master-level studies.
+- **Category 2 (low + mid level)**: the robot follows a fixed reference path through four waypoints, (10.2, 13.7), (15.0, 13.7), (18.0, 13.7) and (18.0, 17.4), along a corridor, the headland and a second corridor, without a global planner. Suitable for master-level studies on predictive control and path following.
 
-- **Category 3**: Targeted at advanced users developing high-level control and planning strategies, including sophisticated motion planners and decision-making algorithms. This category is appropriate for doctoral-level research.
+- **Category 3 (low + mid + high level)**: autonomous navigation to a single goal, (18.0, 17.4) with a final orientation of 0.74 rad, using a global planner on a prior map. Suitable for doctoral research on planning and navigation.
+
+In Categories 2 and 3, a run succeeds when the robot reaches the goal within 0.3 m before 180 s; otherwise it ends as failed (the controller aborts) or timeout.
 
 ### Disturbances
 
-To evaluate controller robustness under realistic operating conditions, the benchmark includes three types of disturbances, which can be activated independently or in combination:
+The three disturbances can be activated independently or combined (eight conditions):
 
-- **Payload Sensitivity**: Mobile robots in greenhouse environments frequently transport variable payloads, which significantly affect motor behavior and dynamics. The benchmark allows users to emulate additional payloads up to 70 kg, applied as a static disturbance at the start of the simulation.
+- **Payload Sensitivity**: additional load from 0 to 70 kg, applied at the start of the simulation. It is not measured by any sensor; its value is declared by the user.
 
-- **Terrain Slope**: Variable terrain slopes, typical of Mediterranean greenhouses, are simulated within a range of −3° to +3°. When enabled, a slope pattern is applied to the environment, directly influencing the robot’s dynamic response during navigation tasks.
+- **Terrain Slope**: a terrain profile with inclinations between approximately −4° (downhill) and +2.3° (uphill) along the reference path. Other profiles can be defined by modifying the terrain model of the world.
 
-- **Terrain Change**: Greenhouse environments often contain heterogeneous soil types. This disturbance emulates changes in terrain properties that directly affect the physical friction model. When activated, three distinct soil types are defined, each characterized by specific values of: friction coefficient (μ), rolling resistance coefficient (Crr), and damping factor (D).
+- **Terrain Change**: three soil sectors (gravel sand, concrete and compact sand), each with its own friction coefficient (μ), rolling resistance coefficient (Crr) and damping coefficient (C_D).
+  
 
 ### Running
 
@@ -132,20 +145,29 @@ All these variables can be launched with the following command:
 
 ```
 ros2 launch benchmark_bringup launch_benchmark_bringup.launch.py \
-  category:=1 \
+  category:=2 \
+  controller:=teb \
+  planner:=theta \
   payload:=0 \
   terrain_slope:=false \
-  change_terrain:=false
+  change_terrain:=false \
+  seed:=1
 ```
 where:
 
 - ```category:=1 ``` selects the evaluation category (1, 2, or 3),
+
+- ```controller:=teb ``` selects the mid-level controller (teb, mppi, rpp or dwb; Categories 2 and 3),
+
+- ```planner```  selects the global planner (theta, smac or navfn; Category 3),
 
 - ```payload``` specifies the additional load (from 0 to 70 kg),
 
 - ```terrain_slope:=false ``` enables or disables terrain inclination (true or false),
 
 - ```change_terrain:=false ``` change_terrain enables or disables terrain heterogeneity (true or false).
+
+The launch file applies the common limits to whichever controller is selected, so that all of them are evaluated under the same conditions.
 
 Example:
 
@@ -154,13 +176,45 @@ Example:
 For a complete description of the simulator architecture, control schemes, evaluation metrics, and experimental methodology, the reader is referred to the associated journal/conference article, which provides a detailed and rigorous explanation of the benchmark framework.
 
 
-📊 Performance Analysis and Data Logging
+📊 Metrics and Data Logging
 --------------------
-During simulation execution, real-time performance plots are displayed, allowing the user to continuously assess the behavior of the implemented control law. These plots provide immediate qualitative insight into the system response and controller performance under the selected operating conditions. In addition, once the simulation finishes, the benchmark automatically generates a CSV data file containing the relevant performance variables. This file is saved in the directory from which the simulation was launched and includes the data required for offline analysis, post-processing, and quantitative evaluation (```$pwd/result/category_X/yyyy_mm_dd_hh_mm_ss.csv```).
+During a run, real-time plots show the errors and control effort of each level. When the run finishes, a folder is created with the time series (CSV), the performance indices and the run metadata (seed, condition, configuration and final status) in ```$pwd/result/category_X/yyyy_mm_dd_hh_mm_ss.csv```). The indices are time averages of normalised signals, so they do not depend on the sampling frequency or the duration of the test:
 
-🖥️ Virtual Machine <a name="mi-marcador-secreto"></a>
+- SAE (Scaled Absolute Error): mean normalised tracking error of the evaluated level (wheel velocity error in Category 1; distance to the common reference path in Category 2; distance to the first plan in Category 3).
+- SCI (Scaled Control Input): mean normalised control input (motor torque or velocity command), bounded between 0 and 1.
+J = (SAE + SCI)/2 for each level, and J<sup>rel</sup>, relative to the reference stack in the nominal condition (1 = reference, < 1 better).
+- Task-level indicators (Categories 2 and 3): success, time to goal, path length (and planned length in Category 3), minimum distance to the obstacles and number of contacts.
+
+Since a controller that slows down reduces its control effort, the indices should always be read together with the success rate and the time to goal. See the article for the complete definitions.
+
+🔬 Reproducing the results
+--------------------
+The ```tools/``` directory contains the scripts used for the reference case:
+```
+cd ~/ros2_ws/src/robotics_benchmark_greenhouse/tools
+python3 run_batch.py --out ~/results --categories 2 \
+    --controllers teb mppi rpp --conditions all --seeds 6
+python3 analyze_results.py ~/results
+```
+- **run_batch.py** runs a complete campaign without visualisation (any subset of categories, controllers, planners, conditions and seeds), checks the validity of every run (real-time factor within 1 ± 0.05 and no gap longer than 0.5 s in the recorded data), repeats invalid runs and resumes interrupted campaigns.
+- **analyze_results.py** computes the indices, the tables (mean ± standard deviation and Mann–Whitney comparisons with the baseline), the heatmaps of the relative indices and the computational cost.
+
+The reference case comprises 336 valid runs (8 conditions × 6 runs; PI in Category 1, three controllers in Category 2 and three planners in Category 3). The individual results of every run are available in Zenodo.
+
+🧩 Evaluating your own control law
+--------------------
+
+- Low level: modify or replace the control function in ```VehicleDifferential_ControllerTwistPID.cpp``` (inputs: wheel velocity reference and measurement, estimated slope torque; output: motor torque).
+- Mid level: write a configuration file for any existing Nav2 controller, or develop a new controller plugin [tutorial](https://docs.nav2.org/rolling/tutorials/plugin_tutorials/writing_new_controller_plugin/writing_new_controller_plugin/), and add it to the list of controllers of the launch file.
+- High level: configure any Nav2 planner or develop a new planner plugin [tutorial](https://docs.nav2.org/rolling/tutorials/plugin_tutorials/writing_new_planner_plugin/writing_new_planner_plugin/), and add it to the list of planners of the launch file.
+
+Then run the same campaign with run_batch.py and compare with the reference results.
+
+
+🖥️ Virtual Machine <a name="virtual-machine"></a>
 --------------------
 A fully configured virtual machine is provided to ensure easy deployment and reproducibility across different operating systems (Windows and IOS). To set up this virtual machine, follow these [instructions](https://github.com/FerCanAra/IIR_ROS2_Tutorial/blob/main/docs/vmwaresetup.md). They first detail how to install VMware Pro 17 for free on Ubuntu 22.04, followed by configuring the ROS 2 Humble environment and installing the benchmark.
+
 
 <div align="center">
 
