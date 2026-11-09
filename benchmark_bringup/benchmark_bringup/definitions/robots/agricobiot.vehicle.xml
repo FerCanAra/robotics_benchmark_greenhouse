@@ -16,7 +16,7 @@
 <vehicle:class name="agricobiot">
 
     <!--  Dynamical model -->
-    <dynamics class="differential_4_wheels">
+<dynamics class="differential_4_wheels">
         <!-- Params -->
         <lf_wheel pos="0.265  0.3" mass="3.0" width="0.1" diameter="0.32">
             <visual>
@@ -75,21 +75,26 @@
             <reference_filter_order>$env{REFERENCE_FILTER_ORDER}</reference_filter_order>
 
             <!-- Saturation -->
-            <I_MAX>400</I_MAX>
             <V>0.0</V>
             <W>0</W>
             <max_torque>$env{MAX_TORQUE}</max_torque>
+
 
         </controller>
 
     </dynamics>
 
-    <!-- Friction force simulation -->
+    <!-- Wheel-ground friction. The terrain sectors of the greenhouse override mu and C_rr
+         with PropertyRegion elements in the world file (change_terrain:=true). C_damping
+         is the internal friction of the wheel axle, so it does not depend on the terrain. -->
     <friction class="default">
-        <mu>0.5</mu>
-        <C_damping>1.0</C_damping>
-        <Crr>0.02</Crr>
+        <mu>0.2</mu>
+        <C_damping>1.25</C_damping>
+        <C_rr>0.02</C_rr>
     </friction>
+
+    <!-- One row of the logger every 10 ms of simulated time (CSV files and log topics) -->
+    <log_period>0.01</log_period>
 
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->

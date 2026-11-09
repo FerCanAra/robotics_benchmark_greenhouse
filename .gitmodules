@@ -4,6 +4,5 @@
 	branch = humble
 [submodule "teb_local_planner"]
 	path = teb_local_planner
-	url = https://github.com/ual-arm/teb_local_planner_benchmark.git
-	branch = ros2-humble
-
+	url = https://github.com/FerCanAra/teb_local_planner_benchmark.git
+	branch = benchmark-v1.1.0

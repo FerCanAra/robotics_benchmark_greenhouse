@@ -1,0 +1,9 @@
+# NavFn (Dijkstra / wavefront on the costmap + gradient descent), Nav2 default planner.
+# Used with:  planner:=navfn
+planner_server:
+  ros__parameters:
+    GridBased:
+      plugin: "nav2_navfn_planner/NavfnPlanner"
+      tolerance: 1.0
+      use_astar: false
+      allow_unknown: true

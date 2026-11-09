@@ -22,12 +22,12 @@ PID:
 
 Feedforward:
   enable_feedforward: false # Enable feedforward
-  feedforward_gain: 0.0 # Feedforward gain
+  feedforward_gain: 0.0 # Feedforward gain (dimensionless)
 
 ReferenceFilter:
-  enable_reference_filter: true # Enable reference filter
-  reference_filter_tau: 0.0 # Time constant for reference filter
-  reference_filter_order: 1 # Filter order
+  enable_reference_filter: false # Enable reference filter (not used in the reference case)
+  reference_filter_tau: 0.0 # Time constant for reference filter [s]
+  reference_filter_order: 1 # Filter order (1 or 2)
 
 MotorSim:
   max_torque: 500 # Maximum torque (Nm)
