@@ -23,6 +23,8 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 - Terrain sectors are `PropertyRegion` elements of the world file that override, per wheel, the friction coefficient (`friction_mu`) and the rolling resistance (`friction_C_rr`). The damping `C_damping` is an internal friction of the wheel axle, so it is now the same in all the sectors.
 - The low-level signals are read from the MVSim vehicle logs, published as ROS 2 topics (`/log/wheel_1/*`, `/log/pose/*`), instead of a custom `benchmark_msg` message.
 - The seed (`seed:=N`) now also fixes the arrangement of the plants, so a run is fully reproducible from its seed.
+- The skid-steer robot turns at the commanded rate: the MVSim `twist_pid` controller compensates the turn slip of the wheels, and the gain of the wheel PI is `KI = 200` (closed-loop poles -2.68 ± 2.68j s⁻¹, damping 0.71) instead of 40, whose slow pole made the robot take several seconds to reach the commanded turn rate.
+- A Docker image with the complete benchmark is available (see [Docker](#docker)).
 
 📑 What's new in v1.1.0
 ------------------
@@ -209,6 +211,20 @@ python3 analyze_results.py ~/results
 - **analyze_results.py** computes the indices, the tables (mean ± standard deviation and Mann–Whitney comparisons with the baseline), the heatmaps of the relative indices and the computational cost.
 
 The reference case comprises 336 valid runs (8 conditions × 6 runs; PI in Category 1, three controllers in Category 2 and three planners in Category 3). The individual results of every run are available in Zenodo.
+
+🐳 Docker <a name="docker"></a>
+--------------------
+The Docker image contains the complete benchmark (ROS 2 Humble, Nav2, MRPT, MVSim and this repository), so a campaign can be reproduced without installing anything else. It is published in the GitHub Container Registry, and the exact image used for the results of the article is archived in Zenodo.
+
+```
+docker pull ghcr.io/fercanara/robotics_benchmark_greenhouse:latest
+docker/run_campaign.sh ~/results --categories 2 --controllers teb mppi rpp --conditions all --seeds 6
+```
+`run_campaign.sh` runs `run_batch.py` inside the container, with the same arguments, and writes the results in the given folder (`IMAGE=...` selects another image). The image archived in Zenodo is loaded with `docker load -i <file>.tar.gz`.
+
+- **GPU**: MVSim renders the sensors with OpenGL. Without GPU access the simulation runs much slower than real time and the validity check rejects every run. `run_campaign.sh` gives the container access to an NVIDIA GPU (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) or to `/dev/dri` (Intel/AMD).
+- **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically.
+- **Building the image**: `docker build -f docker/Dockerfile -t greenhouse-benchmark .` from the repository root, with its submodules checked out. The MVSim version is set with `--build-arg MVSIM_REF=<tag or commit>`.
 
 🧩 Evaluating your own control law
 --------------------
