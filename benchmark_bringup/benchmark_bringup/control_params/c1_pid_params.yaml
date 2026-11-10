@@ -15,7 +15,7 @@
 
 PID:
   KP: 70 # Proportional gain
-  KI: 40 # Integral gain
+  KI: 200 # Integral gain
   KD: 0 # Derivative gain
   N: 0 # Filter coefficient for derivative term
   enable_antiwindup: true # Enable anti-windup

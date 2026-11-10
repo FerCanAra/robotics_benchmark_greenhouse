@@ -20,7 +20,7 @@ from nav2_simple_commander.robot_navigator import BasicNavigator
 
 from benchmark_bringup.categories.common import (
     StatusPublisher,
-    initial_pose_from_odom,
+    initial_pose_from_ground_truth,
     make_pose,
     run_navigation,
 )
@@ -39,7 +39,7 @@ class Category3Navigator(Node):
         self.status = StatusPublisher(self, category=3)
 
     def execute_route(self):
-        initial_pose_from_odom(self, self.navigator)
+        initial_pose_from_ground_truth(self, self.navigator)
         self.get_logger().info("Waiting for Nav2...")
         self.navigator.waitUntilNav2Active()
         self.get_logger().info("Nav2 is active, executing Cat3 route...")
