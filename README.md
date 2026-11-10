@@ -205,7 +205,7 @@ python3 run_batch.py --out ~/results --categories 2 \
     --controllers teb mppi rpp --conditions all --seeds 6
 python3 analyze_results.py ~/results
 ```
-- **run_batch.py** runs a complete campaign without visualisation (any subset of categories, controllers, planners, conditions and seeds), checks the validity of every run (real-time factor within 1 ± 0.05 and no gap longer than 0.5 s in the recorded data), repeats invalid runs and resumes interrupted campaigns.
+- **run_batch.py** runs a complete campaign without visualisation (any subset of categories, controllers, planners, conditions and seeds), checks the validity of every run (real-time factor within 1 ± 0.05, no gap longer than 0.5 s in the recorded data and, in Categories 2 and 3, no more than 5 % of missed control cycles of the mid-level controller), repeats invalid runs and resumes interrupted campaigns.
 - **analyze_results.py** computes the indices, the tables (mean ± standard deviation and Mann–Whitney comparisons with the baseline), the heatmaps of the relative indices and the computational cost.
 
 The reference case comprises 336 valid runs (8 conditions × 6 runs; PI in Category 1, three controllers in Category 2 and three planners in Category 3). The individual results of every run are available in Zenodo.

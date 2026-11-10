@@ -3,7 +3,8 @@
 Batch runner of the greenhouse benchmark.
 
 Launches every (category x condition x seed) run without GUI, waits for it to
-finish, checks that the simulation ran in real time (run_quality.rtf_valid),
+finish, checks that the simulation ran in real time (run_quality.rtf_valid) and that the
+mid-level controller kept its rate (run_quality.controller_rate_valid),
 repeats the invalid runs, measures the CPU/RAM of every process of the run
 (R3.13) and writes a manifest with the software versions (R3.10).
 
@@ -29,6 +30,7 @@ import csv
 import json
 import os
 import platform
+import re
 import signal
 import subprocess
 import sys
@@ -110,10 +112,44 @@ def environment_info():
     }
 
 
+# Max. fraction of control cycles that the mid-level controller may miss: above it,
+# the computer could not run the controller at its rate and the run is not valid.
+MAX_MISSED_CYCLES = 0.05
+MISSED_RE = re.compile(r"Control loop missed its desired rate of ([0-9.]+)\s*Hz")
+
+
+def annotate_controller_rate(run_dir, log_path):
+    """Add the missed control cycles of the Nav2 controller to metrics.json."""
+    mpath = os.path.join(run_dir, "metrics.json")
+    try:
+        m = json.load(open(mpath))
+        meta = json.load(open(os.path.join(run_dir, "meta.json")))
+    except Exception:
+        return
+    q = m.setdefault("run_quality", {})
+    if "controller_rate_valid" in q or not os.path.isfile(log_path):
+        return
+    n_missed = 0
+    rate = 0.0
+    with open(log_path, errors="replace") as f:
+        for line in f:
+            r = MISSED_RE.search(line)
+            if r:
+                n_missed += 1
+                rate = float(r.group(1))
+    duration = (meta.get("t_end_wall") or 0) - (meta.get("t0_wall") or 0)
+    frac = n_missed / (rate * duration) if rate > 0 and duration > 0 else 0.0
+    q["controller_missed_cycles"] = n_missed
+    q["controller_missed_fraction"] = frac
+    q["controller_rate_valid"] = frac <= MAX_MISSED_CYCLES
+    json.dump(m, open(mpath, "w"), indent=2)
+
+
 def run_is_valid(run_dir):
     try:
         m = json.load(open(os.path.join(run_dir, "metrics.json")))
-        return bool(m.get("run_quality", {}).get("rtf_valid", False)), m
+        q = m.get("run_quality", {})
+        return bool(q.get("rtf_valid", False)) and bool(q.get("controller_rate_valid", True)), m
     except Exception:
         return False, None
 
@@ -220,6 +256,7 @@ def launch_run(out, cat, ctrl, planner, cond, seed, extra):
         sampler.close()
         stop_group(proc)
         log.close()
+    annotate_controller_rate(run_dir, log.name)
     json.dump({"category": cat, "controller": "pid" if cat == 1 else ctrl,
                "planner": planner if cat == 3 else "", "condition": cond,
                "seed": seed, "launch_args": args,
@@ -241,7 +278,7 @@ def main():
     ap.add_argument("--seeds", type=int, default=6,
                     help="seeds 1..N (>= 6 so that the paired Wilcoxon test can reach p < 0.05)")
     ap.add_argument("--first-seed", type=int, default=1)
-    ap.add_argument("--retries", type=int, default=2, help="repetitions of an invalid run")
+    ap.add_argument("--retries", type=int, default=3, help="repetitions of an invalid run")
     ap.add_argument("--arg", action="append", default=[], metavar="KEY:=VALUE",
                     help="extra launch argument for all the runs (e.g. --arg params_file_teb:=/path.yaml)")
     ap.add_argument("--dry-run", action="store_true")
@@ -290,6 +327,7 @@ def main():
     for i, (c, ctl, pl, k, s) in enumerate(plan, 1):
         run_dir = os.path.join(out, f"category_{c}", run_name(c, ctl, pl, k, s))
         tag = f"c{c} {label(c, ctl, pl)} {k} s{s}"
+        annotate_controller_rate(run_dir, os.path.join(out, "logs", f"c{c}_{os.path.basename(run_dir)}.log"))
         if run_is_valid(run_dir)[0]:
             print(f"[{i}/{len(plan)}] {tag}: already valid, skipped")
             continue
@@ -311,6 +349,7 @@ def main():
                            q.get("real_time_factor", ""), ok, run_dir])
             logf.flush()
             print(f"      -> {status}, {fs or 'no results'}, RTF={q.get('real_time_factor', float('nan')):.3f}, "
+                  f"missed cycles={100 * q.get('controller_missed_fraction', 0.0):.1f}%, "
                   f"{'VALID' if ok else 'INVALID'}")
             if ok:
                 break
