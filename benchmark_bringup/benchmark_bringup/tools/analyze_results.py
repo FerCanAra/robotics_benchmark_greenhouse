@@ -495,7 +495,8 @@ def main():
         m = json.load(open(mpath))
         meta = json.load(open(os.path.join(d, "meta.json")))
         q = m.get("run_quality", {})
-        if not q.get("rtf_valid", False) or not q.get("controller_rate_valid", True):
+        if (not q.get("rtf_valid", False) or not q.get("controller_rate_valid", True)
+                or not q.get("sim_rate_valid", True)):
             n_invalid += 1
             continue
         cfg = meta.get("metrics_config", {})

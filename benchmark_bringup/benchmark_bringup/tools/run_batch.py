@@ -4,7 +4,8 @@ Batch runner of the greenhouse benchmark.
 
 Launches every (category x condition x seed) run without GUI, waits for it to
 finish, checks that the simulation ran in real time (run_quality.rtf_valid) and that the
-mid-level controller kept its rate (run_quality.controller_rate_valid),
+mid-level controller kept its rate (run_quality.controller_rate_valid), that the
+simulator published the robot state at its rate (run_quality.sim_rate_valid),
 repeats the invalid runs, measures the CPU/RAM of every process of the run
 (R3.13) and writes a manifest with the software versions (R3.10).
 
@@ -117,6 +118,11 @@ def environment_info():
 MAX_MISSED_CYCLES = 0.05
 MISSED_RE = re.compile(r"Control loop missed its desired rate of ([0-9.]+)\s*Hz")
 
+# Max. median period of the ground-truth pose published by MVSim (nominally every
+# 20-27 ms): above it, the simulator main loop could not keep up, the feedback of the
+# navigation stack is delayed, and the run is not valid even if the RTF is ~1.
+MAX_SIM_PUBLISH_PERIOD = 0.035
+
 
 def annotate_controller_rate(run_dir, log_path):
     """Add the missed control cycles of the Nav2 controller to metrics.json."""
@@ -145,11 +151,34 @@ def annotate_controller_rate(run_dir, log_path):
     json.dump(m, open(mpath, "w"), indent=2)
 
 
+def annotate_sim_rate(run_dir):
+    """Add the median publishing period of the ground-truth pose to metrics.json."""
+    mpath = os.path.join(run_dir, "metrics.json")
+    gt_path = os.path.join(run_dir, "pose_ground_truth.csv")
+    try:
+        m = json.load(open(mpath))
+    except Exception:
+        return
+    q = m.setdefault("run_quality", {})
+    if "sim_rate_valid" in q or not os.path.isfile(gt_path):
+        return
+    with open(gt_path) as f:
+        t = [float(r["t_wall"]) for r in csv.DictReader(f)]
+    dt = sorted(b - a for a, b in zip(t[:-1], t[1:]))
+    if not dt:
+        return
+    period = dt[len(dt) // 2]
+    q["sim_publish_period_s"] = period
+    q["sim_rate_valid"] = period <= MAX_SIM_PUBLISH_PERIOD
+    json.dump(m, open(mpath, "w"), indent=2)
+
+
 def run_is_valid(run_dir):
     try:
         m = json.load(open(os.path.join(run_dir, "metrics.json")))
         q = m.get("run_quality", {})
-        return bool(q.get("rtf_valid", False)) and bool(q.get("controller_rate_valid", True)), m
+        return (bool(q.get("rtf_valid", False)) and bool(q.get("controller_rate_valid", True))
+                and bool(q.get("sim_rate_valid", True))), m
     except Exception:
         return False, None
 
@@ -257,6 +286,7 @@ def launch_run(out, cat, ctrl, planner, cond, seed, extra):
         stop_group(proc)
         log.close()
     annotate_controller_rate(run_dir, log.name)
+    annotate_sim_rate(run_dir)
     json.dump({"category": cat, "controller": "pid" if cat == 1 else ctrl,
                "planner": planner if cat == 3 else "", "condition": cond,
                "seed": seed, "launch_args": args,
@@ -328,6 +358,7 @@ def main():
         run_dir = os.path.join(out, f"category_{c}", run_name(c, ctl, pl, k, s))
         tag = f"c{c} {label(c, ctl, pl)} {k} s{s}"
         annotate_controller_rate(run_dir, os.path.join(out, "logs", f"c{c}_{os.path.basename(run_dir)}.log"))
+        annotate_sim_rate(run_dir)
         if run_is_valid(run_dir)[0]:
             print(f"[{i}/{len(plan)}] {tag}: already valid, skipped")
             continue
@@ -350,6 +381,7 @@ def main():
             logf.flush()
             print(f"      -> {status}, {fs or 'no results'}, RTF={q.get('real_time_factor', float('nan')):.3f}, "
                   f"missed cycles={100 * q.get('controller_missed_fraction', 0.0):.1f}%, "
+                  f"pose period={1000 * q.get('sim_publish_period_s', float('nan')):.1f} ms, "
                   f"{'VALID' if ok else 'INVALID'}")
             if ok:
                 break

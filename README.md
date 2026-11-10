@@ -25,6 +25,7 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 - The seed (`seed:=N`) now also fixes the arrangement of the plants, so a run is fully reproducible from its seed.
 - The skid-steer robot turns at the commanded rate: the MVSim `twist_pid` controller compensates the turn slip of the wheels, and the gain of the wheel PI is `KI = 200` (closed-loop poles -2.68 ± 2.68j s⁻¹, damping 0.71) instead of 40, whose slow pole made the robot take several seconds to reach the commanded turn rate.
 - A Docker image with the complete benchmark is available (see [Docker](#docker)).
+- New validity check of the runs: the median period of the ground-truth pose published by MVSim must not exceed 35 ms. On slow computers the simulator can keep a real-time factor of 1 while publishing the robot state (pose, odometry, TF) at a lower rate, which delays the feedback of the navigation stack.
 
 📑 What's new in v1.1.0
 ------------------
@@ -207,7 +208,7 @@ python3 run_batch.py --out ~/results --categories 2 \
     --controllers teb mppi rpp --conditions all --seeds 6
 python3 analyze_results.py ~/results
 ```
-- **run_batch.py** runs a complete campaign without visualisation (any subset of categories, controllers, planners, conditions and seeds), checks the validity of every run (real-time factor within 1 ± 0.05, no gap longer than 0.5 s in the recorded data and, in Categories 2 and 3, no more than 5 % of missed control cycles of the mid-level controller), repeats invalid runs and resumes interrupted campaigns.
+- **run_batch.py** runs a complete campaign without visualisation (any subset of categories, controllers, planners, conditions and seeds), checks the validity of every run (real-time factor within 1 ± 0.05, no gap longer than 0.5 s in the recorded data and, in Categories 2 and 3, no more than 5 % of missed control cycles of the mid-level controller and a median period of the ground-truth pose published by MVSim not longer than 35 ms), repeats invalid runs and resumes interrupted campaigns.
 - **analyze_results.py** computes the indices, the tables (mean ± standard deviation and Mann–Whitney comparisons with the baseline), the heatmaps of the relative indices and the computational cost.
 
 The reference case comprises 336 valid runs (8 conditions × 6 runs; PI in Category 1, three controllers in Category 2 and three planners in Category 3). The individual results of every run are available in Zenodo.
@@ -223,7 +224,7 @@ docker/run_campaign.sh ~/results --categories 2 --controllers teb mppi rpp --con
 `run_campaign.sh` runs `run_batch.py` inside the container, with the same arguments, and writes the results in the given folder (`IMAGE=...` selects another image). The image archived in Zenodo is loaded with `docker load -i <file>.tar.gz`.
 
 - **GPU**: MVSim renders the sensors with OpenGL. Without GPU access the simulation runs much slower than real time and the validity check rejects every run. `run_campaign.sh` gives the container access to an NVIDIA GPU (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) or to `/dev/dri` (Intel/AMD).
-- **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically.
+- **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically. The MVSim main loop runs on a single core, so the single-thread performance of the CPU matters: if most runs are rejected for the period of the ground-truth pose, the computer is too slow for the benchmark.
 - **Building the image**: `docker build -f docker/Dockerfile -t greenhouse-benchmark .` from the repository root, with its submodules checked out. The MVSim version is set with `--build-arg MVSIM_REF=<tag or commit>`.
 
 🧩 Evaluating your own control law
