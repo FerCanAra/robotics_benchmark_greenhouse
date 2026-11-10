@@ -30,8 +30,14 @@ else
 	echo "WARNING: no GPU found: the runs will probably not keep real time." >&2
 fi
 
+# Interactive (Ctrl+C stops the campaign) only when run from a terminal:
+TTY_ARGS=()
+if [ -t 0 ]; then
+	TTY_ARGS=(-it)
+fi
+
 TOOLS=/ws/src/robotics_benchmark_greenhouse/benchmark_bringup/benchmark_bringup/tools
-exec docker run --rm -it "${GPU_ARGS[@]}" \
+exec docker run --rm "${TTY_ARGS[@]}" "${GPU_ARGS[@]}" \
 	--user "$(id -u):$(id -g)" -e HOME=/tmp \
 	-e ROS_DOMAIN_ID="${ROS_DOMAIN_ID:-42}" \
 	-v "$RESULTS":/results \
