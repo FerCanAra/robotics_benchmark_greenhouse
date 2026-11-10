@@ -91,8 +91,6 @@
         <mu>0.2</mu>
         <C_damping>1.25</C_damping>
         <C_rr>0.02</C_rr>
-        <!-- Gravity along slopes loads the wheels and motors (the slope disturbance) -->
-        <slope_reaction_on_wheels>true</slope_reaction_on_wheels>
     </friction>
 
     <!-- One row of the logger every 10 ms of simulated time (CSV files and log topics) -->
