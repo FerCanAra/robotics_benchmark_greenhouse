@@ -31,9 +31,12 @@ RUN sed 's|/ros2/ubuntu|/ros2-testing/ubuntu|' /etc/apt/sources.list.d/ros2.sour
     rosdep install --from-paths src --ignore-src -y -r --rosdistro humble && \
     rm -rf /var/lib/apt/lists/*
 
+# --symlink-install keeps the installed packages linked to their git sources,
+# whose commits run_batch.py records in the manifest of every campaign:
 RUN source /opt/ros/humble/setup.bash && \
-    colcon build --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && \
-    rm -rf build log
+    colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=OFF && \
+    rm -rf log && \
+    git config --system --add safe.directory '*'
 
 COPY docker/entrypoint.sh /entrypoint.sh
 ENTRYPOINT ["/entrypoint.sh"]
