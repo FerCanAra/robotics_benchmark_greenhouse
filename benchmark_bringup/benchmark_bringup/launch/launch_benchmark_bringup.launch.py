@@ -312,14 +312,26 @@ def generate_launch_description():
         force_ns = LaunchConfiguration("force_publish_vehicle_namespace").perform(context)
         log_topic_prefix = "/AGI/log" if force_ns.lower() == "true" else "/log"
 
-        # Motor torque saturation (the CTRL_* arguments are declared after this function)
+        # Low-level controller settings, for the recorder (the CTRL_* arguments are
+        # declared after this function, so their defaults are read from the YAML file)
         with open(PID_MPC_PARAMS) as f:
-            max_torque_default = yaml.safe_load(f)["MotorSim"]["max_torque"]
-        max_torque = float(
-            LaunchConfiguration(
-                "CTRL_MOTORSIM_MAX_TORQUE", default=str(max_torque_default)
+            pid_yaml = yaml.safe_load(f)
+
+        def ctrl(section, key):
+            return LaunchConfiguration(
+                f"CTRL_{section.upper()}_{key.upper()}", default=str(pid_yaml[section][key])
             ).perform(context)
-        )
+
+        max_torque = float(ctrl("MotorSim", "max_torque"))
+        controller_info = {
+            "kp": float(ctrl("PID", "KP")),
+            "ki": float(ctrl("PID", "KI")),
+            "kd": float(ctrl("PID", "KD")),
+            "n": float(ctrl("PID", "N")),
+            "enable_antiwindup": ctrl("PID", "enable_antiwindup"),
+            "enable_feedforward": ctrl("Feedforward", "enable_feedforward"),
+            "enable_reference_filter": ctrl("ReferenceFilter", "enable_reference_filter"),
+        }
 
         # Parameters shared by all the plotters (results logging)
         plotter_params = [
@@ -339,6 +351,7 @@ def generate_launch_description():
                 "w_max": float(LaunchConfiguration("w_max").perform(context)),
                 "max_torque": max_torque,
                 "log_topic_prefix": log_topic_prefix,
+                **controller_info,
             }
         ]
 
@@ -528,6 +541,10 @@ def generate_launch_description():
                 ),
                 # Logger columns as topics (replaces the old /benchmark_params message)
                 "publish_log_topics": True,
+                # Stamp the messages with the wall clock, as the rest of the benchmark
+                # (Nav2 and the scripts do not use /clock): with simulated-time stamps,
+                # any lag of the simulation makes the transforms of Nav2 fail.
+                "disable_sim_time_clock": True,
             },
         ],
     )

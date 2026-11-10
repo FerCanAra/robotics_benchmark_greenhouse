@@ -73,9 +73,10 @@ class MVSimLogListener:
     value of every column belongs to the previous row, which is complete and is
     passed to `callback` as an object with the fields of the old benchmark message."""
 
-    def __init__(self, node: Node, prefix: str, callback, max_torque: float):
+    def __init__(self, node: Node, prefix: str, callback, max_torque: float, info: dict):
         self.callback = callback
         self.max_torque = max_torque
+        self.info = info  # controller settings shown in the figures
         self.values = {k: 0.0 for k in list(WHEEL_LOG_COLUMNS) + list(POSE_LOG_COLUMNS)}
         self.prev_stamp: Optional[float] = None
         prefix = prefix.rstrip("/")
@@ -100,6 +101,7 @@ class MVSimLogListener:
                     mu_zone1=MU_ZONES[0],
                     mu_zone2=MU_ZONES[1],
                     mu_zone3=MU_ZONES[2],
+                    **self.info,
                     **self.values,
                 )
             )
@@ -188,6 +190,14 @@ class BenchmarkRecorder(Node):
             "goal_tolerance": 0.3,
             "max_torque": 500.0,      # [N m] motor torque saturation (MotorSim.max_torque)
             "log_topic_prefix": "/log",  # MVSim log topics of the robot
+            # Low-level controller settings (only shown in the figures)
+            "kp": 0.0,
+            "ki": 0.0,
+            "kd": 0.0,
+            "n": 0.0,
+            "enable_antiwindup": "false",
+            "enable_feedforward": "false",
+            "enable_reference_filter": "false",
         }
         for k, v in defaults.items():
             self.declare_parameter(k, v, dyn)
@@ -248,8 +258,12 @@ class BenchmarkRecorder(Node):
         self.last_bench = None
 
         self.create_subscription(String, STATUS_TOPIC, self._cb_status, status_qos())
+        info = {k: float(p(k)) for k in ("kp", "ki", "kd", "n")}
+        for k in ("enable_antiwindup", "enable_feedforward"):
+            info[k] = str(p(k)).lower() == "true"
+        info["enable_referencefilter"] = str(p("enable_reference_filter")).lower() == "true"
         self.log_listener = MVSimLogListener(
-            self, str(p("log_topic_prefix")), self._cb_bench, float(p("max_torque"))
+            self, str(p("log_topic_prefix")), self._cb_bench, float(p("max_torque")), info
         )
 
     # ------------------------------------------------------------------ helpers
