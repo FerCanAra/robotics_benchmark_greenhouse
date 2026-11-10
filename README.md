@@ -225,6 +225,12 @@ docker/run_campaign.sh ~/results --categories 2 --controllers teb mppi rpp --con
 
 - **GPU**: MVSim renders the sensors with OpenGL. Without GPU access the simulation runs much slower than real time and the validity check rejects every run. `run_campaign.sh` gives the container access to an NVIDIA GPU (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) or to `/dev/dri` (Intel/AMD).
 - **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically. The MVSim main loop runs on a single core, so the single-thread performance of the CPU matters: if most runs are rejected for the period of the ground-truth pose, the computer is too slow for the benchmark.
+- **GUI**: the runs are headless by default. To watch the MVSim 3D view and the real-time plots of each level, allow local containers to open windows and set `GUI=1`:
+  ```
+  xhost +local:
+  GUI=1 docker/run_campaign.sh ~/results_gui --categories 3 --planners theta --conditions nominal --seeds 1
+  ```
+  `GUI=1` shares the X server of the desktop with the container (`DISPLAY` and `/tmp/.X11-unix`) and passes `headless:=False` and `plot:=True` to the runs. Without the script, add `-e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:ro` to `docker run`, and `--arg headless:=False --arg plot:=True` to `run_batch.py`. RViz is not included in the image. Drawing the windows adds load to the computer, so keep these runs out of the folders of the campaigns. `xhost -local:` revokes the access when done.
 - **Building the image**: `docker build -f docker/Dockerfile -t greenhouse-benchmark .` from the repository root, with its submodules checked out. The MVSim version is set with `--build-arg MVSIM_REF=<tag or commit>`.
 
 🧩 Evaluating your own control law
