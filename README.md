@@ -89,7 +89,7 @@ sudo apt install python3-colcon-common-extensions
 sudo apt install python3-rosdep2
 ```
 4. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). They will be installed in the rosdep commands.
-5. [MVSim](https://github.com/MRPT/mvsim): until its next release includes `<random_seed>` and `<log_period>`, clone its `develop` branch into the same workspace (`git clone https://github.com/MRPT/mvsim.git` in `~/ros2_ws/src`).
+5. [MVSim](https://github.com/MRPT/mvsim): until its next release includes `<random_seed>`, `<log_period>` and the turn slip compensation of `twist_pid`, clone its `develop` branch into the same workspace (`git clone https://github.com/MRPT/mvsim.git` in `~/ros2_ws/src`).
 
 🛠️ Install and build
 --------------------

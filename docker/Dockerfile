@@ -7,7 +7,7 @@ FROM ros:humble-ros-base
 
 # MVSim version (a tag, branch or commit of https://github.com/MRPT/mvsim),
 # the one this version of the benchmark was validated with:
-ARG MVSIM_REF=e87a279f
+ARG MVSIM_REF=2cc54561
 
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
