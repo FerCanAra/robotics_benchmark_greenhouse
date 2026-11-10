@@ -1,0 +1,6 @@
+venv/*
+!venv/COLCON_IGNORE
+build
+install
+log
+**/__pycache__

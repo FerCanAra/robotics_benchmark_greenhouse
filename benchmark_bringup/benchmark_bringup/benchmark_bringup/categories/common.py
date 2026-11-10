@@ -67,22 +67,25 @@ def make_pose(navigator, x: float, y: float, yaw: float) -> PoseStamped:
     return deepcopy(pose)
 
 
-def initial_pose_from_odom(node, navigator, timeout: float = 30.0):
-    """Wait for the first /odom message and use it as the initial pose of Nav2.
-    This avoids BasicNavigator publishing a default (0, 0, 0) initial pose."""
+def initial_pose_from_ground_truth(node, navigator, timeout: float = 30.0):
+    """Wait for the first MVSim ground-truth pose and use it as the initial pose of
+    Nav2. This avoids BasicNavigator publishing a default (0, 0, 0) initial pose.
+    (/odom cannot be used: the odometry frame starts at the origin, not at the
+    pose of the robot in the map.)"""
     first = {}
 
     def cb(msg):
         if not first:
             first["msg"] = msg
 
-    sub = node.create_subscription(Odometry, "/odom", cb, 10)
+    sub = node.create_subscription(Odometry, "/base_pose_ground_truth", cb, 10)
     t_start = time.time()
     while rclpy.ok() and not first and time.time() - t_start < timeout:
         rclpy.spin_once(node, timeout_sec=0.1)
     node.destroy_subscription(sub)
     if not first:
-        node.get_logger().warn("No /odom received: Nav2 initial pose not set by the script.")
+        node.get_logger().warn(
+            "No ground-truth pose received: Nav2 initial pose not set by the script.")
         return
     p = first["msg"].pose.pose
     pose = PoseStamped()

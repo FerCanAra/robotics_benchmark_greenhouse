@@ -5,7 +5,7 @@ A ROS 2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Rob
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22679881.svg)](https://zenodo.org/records/24059343)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 
-This repository provides a standardised, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under representative operating conditions. The framework combines a physics-based simulation of a real Mediterranean greenhouse (Agroconnect, Almería, Spain) with a hierarchical control architecture spanning low-, mid- and high-level control. Parameterised disturbances (payload, terrain type and slope), normalised performance indices, task-level indicators and a statistical protocol enable fair, repeatable comparisons of control strategies, while a plugin-based design allows custom controllers and planners to be integrated without modifying the benchmark. It used [MultiVehicle simulator (MVSim)](https://github.com/MRPT/mvsim), a lightweight dynamical simulator for 2D ("2.5D") vehicles that models wheel–ground contact forces and typical robot sensors, and [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file) for the mid- and high-level layers. The complete benchmark runs in real time using less than two CPU cores, so it can be used on standard computers.
+This repository provides a standardised, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under representative operating conditions. The framework combines a physics-based simulation of a real Mediterranean greenhouse (Agroconnect, Almería, Spain) with a hierarchical control architecture spanning low-, mid- and high-level control. Parameterised disturbances (payload, terrain type and slope), normalised performance indices, task-level indicators and a statistical protocol enable fair, repeatable comparisons of control strategies, while a plugin-based design allows custom controllers and planners to be integrated without modifying the benchmark. It used [MultiVehicle simulator (MVSim)](https://github.com/MRPT/mvsim), a lightweight dynamical simulator for 2D ("2.5D") vehicles that models wheel–ground contact forces and typical robot sensors, and [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file) for the mid- and high-level layers. The complete benchmark runs in real time using about two CPU cores (at most 2.3 cores of a 2017 desktop processor, Intel Core i7-8700), so it can be used on standard computers.
 
 <img src="./docs/BenchmarkCat.gif" width="700" height="600">
 
@@ -16,6 +16,17 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 
 > **Note:** Version v1.1.0 corresponds to the revised version of the associated article. Process tested on 8th November 2026.
 
+📑 Unreleased: official MVSim
+------------------
+
+- The benchmark now uses the official [MVSim](https://github.com/MRPT/mvsim) (`develop` branch, built from source until its next release) instead of a fork. Its physics are those of current MVSim (friction circle, load transfer, gravity on slopes), so the results differ from those of v1.1.0 and of the article, which used the fork: to reproduce the article, use the release tag `v1.1.0`.
+- Terrain sectors are `PropertyRegion` elements of the world file that override, per wheel, the friction coefficient (`friction_mu`) and the rolling resistance (`friction_C_rr`). The damping `C_damping` is an internal friction of the wheel axle, so it is now the same in all the sectors.
+- The low-level signals are read from the MVSim vehicle logs, published as ROS 2 topics (`/log/wheel_1/*`, `/log/pose/*`), instead of a custom `benchmark_msg` message.
+- The seed (`seed:=N`) now also fixes the arrangement of the plants, so a run is fully reproducible from its seed.
+- The skid-steer robot turns at the commanded rate: the MVSim `twist_pid` controller compensates the turn slip of the wheels, and the gain of the wheel PI is `KI = 200` (closed-loop poles -2.68 ± 2.68j s⁻¹, damping 0.71) instead of 40, whose slow pole made the robot take several seconds to reach the commanded turn rate.
+- A Docker image with the complete benchmark is available (see [Docker](#docker)).
+- New validity check of the runs: the median period of the ground-truth pose published by MVSim must not exceed 35 ms. On slow computers the simulator can keep a real-time factor of 1 while publishing the robot state (pose, odometry, TF) at a lower rate, which delays the feedback of the navigation stack.
+
 📑 What's new in v1.1.0
 ------------------
 
@@ -23,7 +34,7 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 - Common reference in Category 2: the four waypoints are joined into a fixed reference path that is sent directly to the controller (FollowPath), so every controller follows exactly the same reference.
 - Redesigned metrics: time-averaged indices of normalised signals (SAE, SCI), relative indices with respect to the reference stack, and task-level indicators (success, time to goal, path length, clearance, contacts).
 - Campaign tools: scripts to run complete campaigns with a real-time validity check and to compute the tables, heatmaps and statistical comparisons (tools/).
-- Simulator fixes: odometry twist published by MVSim and lateral friction factor for skid-steer vehicles.
+- Simulator fixes: odometry twist published by MVSim and lateral friction factor for skid-steer vehicles (MVSim fork; see above for the current version).
 - Reference results: the 336 runs of the reference case are archived in [Zenodo](https://doi.org/10.5281/zenodo.22679881).
 
 📑 Citation
@@ -79,6 +90,7 @@ sudo apt install python3-colcon-common-extensions
 sudo apt install python3-rosdep2
 ```
 4. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). They will be installed in the rosdep commands.
+5. [MVSim](https://github.com/MRPT/mvsim): until its next release includes `<random_seed>`, `<log_period>` and the turn slip compensation of `twist_pid`, clone its `develop` branch into the same workspace (`git clone https://github.com/MRPT/mvsim.git` in `~/ros2_ws/src`).
 
 🛠️ Install and build
 --------------------
@@ -136,7 +148,7 @@ The three disturbances can be activated independently or combined (eight conditi
 
 - **Terrain Slope**: a terrain profile with inclinations between approximately −4° (downhill) and +2.3° (uphill) along the reference path. Other profiles can be defined by modifying the terrain model of the world.
 
-- **Terrain Change**: three soil sectors (gravel sand, concrete and compact sand), each with its own friction coefficient (μ), rolling resistance coefficient (Crr) and damping coefficient (C_D).
+- **Terrain Change**: three soil sectors (gravel sand, concrete and compact sand), each with its own friction coefficient (μ) and rolling resistance coefficient (C_rr), defined with `PropertyRegion` elements in the world file.
   
 
 ### Running
@@ -196,10 +208,30 @@ python3 run_batch.py --out ~/results --categories 2 \
     --controllers teb mppi rpp --conditions all --seeds 6
 python3 analyze_results.py ~/results
 ```
-- **run_batch.py** runs a complete campaign without visualisation (any subset of categories, controllers, planners, conditions and seeds), checks the validity of every run (real-time factor within 1 ± 0.05 and no gap longer than 0.5 s in the recorded data), repeats invalid runs and resumes interrupted campaigns.
+- **run_batch.py** runs a complete campaign without visualisation (any subset of categories, controllers, planners, conditions and seeds), checks the validity of every run (real-time factor within 1 ± 0.05, no gap longer than 0.5 s in the recorded data and, in Categories 2 and 3, no more than 5 % of missed control cycles of the mid-level controller and a median period of the ground-truth pose published by MVSim not longer than 35 ms), repeats invalid runs and resumes interrupted campaigns.
 - **analyze_results.py** computes the indices, the tables (mean ± standard deviation and Mann–Whitney comparisons with the baseline), the heatmaps of the relative indices and the computational cost.
 
 The reference case comprises 336 valid runs (8 conditions × 6 runs; PI in Category 1, three controllers in Category 2 and three planners in Category 3). The individual results of every run are available in Zenodo.
+
+🐳 Docker <a name="docker"></a>
+--------------------
+The Docker image contains the complete benchmark (ROS 2 Humble, Nav2, MRPT, MVSim and this repository), so a campaign can be reproduced without installing anything else. It is published in the GitHub Container Registry, and the exact image used for the results of the article is archived in Zenodo.
+
+```
+docker pull ghcr.io/fercanara/robotics_benchmark_greenhouse:latest
+docker/run_campaign.sh ~/results --categories 2 --controllers teb mppi rpp --conditions all --seeds 6
+```
+`run_campaign.sh` runs `run_batch.py` inside the container, with the same arguments, and writes the results in the given folder (`IMAGE=...` selects another image). The image archived in Zenodo is loaded with `docker load -i <file>.tar.gz`.
+
+- **GPU**: MVSim renders the sensors with OpenGL. Without GPU access the simulation runs much slower than real time and the validity check rejects every run. `run_campaign.sh` gives the container access to an NVIDIA GPU (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) or to `/dev/dri` (Intel/AMD).
+- **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically. The MVSim main loop runs on a single core, so the single-thread performance of the CPU matters: if most runs are rejected for the period of the ground-truth pose, the computer is too slow for the benchmark.
+- **GUI**: the runs are headless by default. To watch the MVSim 3D view and the real-time plots of each level, allow local containers to open windows and set `GUI=1`:
+  ```
+  xhost +local:
+  GUI=1 docker/run_campaign.sh ~/results_gui --categories 3 --planners theta --conditions nominal --seeds 1
+  ```
+  `GUI=1` shares the X server of the desktop with the container (`DISPLAY` and `/tmp/.X11-unix`) and passes `headless:=False` and `plot:=True` to the runs. Without the script, add `-e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:ro` to `docker run`, and `--arg headless:=False --arg plot:=True` to `run_batch.py`. RViz is not included in the image. Drawing the windows adds load to the computer, so keep these runs out of the folders of the campaigns. `xhost -local:` revokes the access when done.
+- **Building the image**: `docker build -f docker/Dockerfile -t greenhouse-benchmark .` from the repository root, with its submodules checked out. The MVSim version is set with `--build-arg MVSIM_REF=<tag or commit>`.
 
 🧩 Evaluating your own control law
 --------------------

@@ -32,3 +32,4 @@ __pycache__/
 result/
 results/
 mrpt_ros_bridge/
+venv

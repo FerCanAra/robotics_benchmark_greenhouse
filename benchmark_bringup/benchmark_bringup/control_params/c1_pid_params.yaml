@@ -15,20 +15,19 @@
 
 PID:
   KP: 70 # Proportional gain
-  KI: 40 # Integral gain
+  KI: 200 # Integral gain
   KD: 0 # Derivative gain
   N: 0 # Filter coefficient for derivative term
   enable_antiwindup: true # Enable anti-windup
 
 Feedforward:
   enable_feedforward: false # Enable feedforward
-  K_ff: 0.0 # Feedforward gain
-  tau_ff: 0.0 # Feedforward time constant
+  feedforward_gain: 0.0 # Feedforward gain (dimensionless)
 
 ReferenceFilter:
-  enable_referencefilter: false # Enable reference filter (not used in the reference case)
-  tau_f: 0.0 # Time constant for reference filter
-  n_f: 1 # Filter order
+  enable_reference_filter: false # Enable reference filter (not used in the reference case)
+  reference_filter_tau: 0.0 # Time constant for reference filter [s]
+  reference_filter_order: 1 # Filter order (1 or 2)
 
 MotorSim:
   max_torque: 500 # Maximum torque (Nm)

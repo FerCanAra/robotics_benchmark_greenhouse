@@ -21,13 +21,13 @@ class InitPosePublisher(Node):
     def __init__(self):
         super().__init__("init_pose_publisher")
         self.subscription = self.create_subscription(
-            Odometry, "/odom", self.odom_callback, 10
+            Odometry, "/base_pose_ground_truth", self.odom_callback, 10
         )
         self.publisher = self.create_publisher(
             PoseWithCovarianceStamped, "/initialpose", 10
         )
         self.pose_published = False
-        self.get_logger().info("Waiting for first /odom to publish /initialpose...")
+        self.get_logger().info("Waiting for the first ground-truth pose to publish /initialpose...")
 
     def odom_callback(self, msg):
         if self.pose_published:
@@ -44,7 +44,7 @@ class InitPosePublisher(Node):
 
         self.publisher.publish(pose_msg)
         self.pose_published = True
-        self.get_logger().info("Initial pose published from /odom in /initialpose")
+        self.get_logger().info("Initial pose published from the ground truth in /initialpose")
         self.destroy_node()
 
 

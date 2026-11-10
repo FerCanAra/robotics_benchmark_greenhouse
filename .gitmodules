@@ -1,7 +1,3 @@
-[submodule "mvsim"]
-	path = mvsim
-	url = https://github.com/FerCanAra/mvsim.git
-	branch = benchmark-v1.1.0
 [submodule "costmap_converter"]
 	path = costmap_converter
 	url = https://github.com/rst-tu-dortmund/costmap_converter.git

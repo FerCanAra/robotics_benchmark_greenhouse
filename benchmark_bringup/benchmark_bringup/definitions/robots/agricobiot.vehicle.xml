@@ -67,48 +67,34 @@
 
             <!-- Feedforward Control -->
             <enable_feedforward>$env{ENABLE_FEEDFORWARD}</enable_feedforward>
-            <K_ff>$env{K_FF}</K_ff>
-            <tau_ff>$env{TAU_FF}</tau_ff>
+            <feedforward_gain>$env{FEEDFORWARD_GAIN}</feedforward_gain>
 
             <!-- Reference filter -->
-            <enable_referencefilter>$env{ENABLE_REFERENCEFILTER}</enable_referencefilter>
-            <tau_f>$env{TAU_F}</tau_f>
-            <n_f>$env{N_F}</n_f>
+            <enable_reference_filter>$env{ENABLE_REFERENCE_FILTER}</enable_reference_filter>
+            <reference_filter_tau>$env{REFERENCE_FILTER_TAU}</reference_filter_tau>
+            <reference_filter_order>$env{REFERENCE_FILTER_ORDER}</reference_filter_order>
 
             <!-- Saturation -->
             <V>0.0</V>
             <W>0</W>
             <max_torque>$env{MAX_TORQUE}</max_torque>
 
-            <!-- Publication rate of /benchmark_params [Hz] (simulated time) -->
-            <benchmark_pub_rate>100</benchmark_pub_rate>
 
         </controller>
 
     </dynamics>
 
-    <!-- Friction force simulation. You can change -->
-    <if condition="$f{USE_ADAP_FRICTION}">
-        <friction class="AdaptativeFriction">
-            <!-- Lateral grip = 0.5 x longitudinal grip (tyre). With isotropic friction this
-                 4-wheel skid-steer (wheelbase 0.53 m, track 0.60 m) could hardly turn. -->
-            <lateral_mu_factor>0.5</lateral_mu_factor>
-            <zones>
-                <zone name="Solid Sand" mu="0.5" C_damping="1.0" Crr="0.05" x_min="2.0" x_max="24.7" y_min="1.09" y_max="12.7"/>
-                <zone name="Cement" mu="0.9" C_damping="0.75" Crr="0.01" x_min="2.0" x_max="24.7" y_min="12.7" y_max="15.0"/>
-                <zone name="Slim Sand" mu="0.2" C_damping="1.25" Crr="0.10" x_min="2" x_max="24.7" y_min="15" y_max="21.6"/>
-            </zones>
-        </friction>
-    </if>
+    <!-- Wheel-ground friction. The terrain sectors of the greenhouse override mu and C_rr
+         with PropertyRegion elements in the world file (change_terrain:=true). C_damping
+         is the internal friction of the wheel axle, so it does not depend on the terrain. -->
+    <friction class="default">
+        <mu>0.2</mu>
+        <C_damping>1.25</C_damping>
+        <C_rr>0.02</C_rr>
+    </friction>
 
-    <if condition="$f{not(USE_ADAP_FRICTION)}">
-        <friction class="default">
-            <mu>0.2</mu>
-            <C_damping>1.25</C_damping>
-            <Crr>0.02</Crr>
-            <lateral_mu_factor>0.5</lateral_mu_factor>
-        </friction>
-    </if>
+    <!-- One row of the logger every 10 ms of simulated time (CSV files and log topics) -->
+    <log_period>0.01</log_period>
 
     <!--  Custom visualization model -->
     <!-- 3D model filename to load (local or remote http://uri ) -->

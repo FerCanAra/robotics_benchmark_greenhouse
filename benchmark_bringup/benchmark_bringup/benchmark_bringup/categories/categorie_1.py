@@ -13,16 +13,15 @@
 # ---------------------------------------------------------------------------
 #                  Low Level Control Inputs - Category 1
 # ---------------------------------------------------------------------------
-# The velocity profile is scheduled in SIMULATED time (field sim_time of
-# /benchmark_params), so it does not depend on the CPU load of the computer.
-# t = 0 is the first /benchmark_params message received by this node, and it is
+# The velocity profile is scheduled in SIMULATED time (the Timestamp column of the
+# MVSim wheel log, published as a topic), so it does not depend on the CPU load of
+# the computer. t = 0 is the first log row received by this node, and it is
 # announced to the plotter through the STARTED event on /benchmark/status.
 
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist
-
-from benchmark_msg.msg import BenchmarkParams
+from std_msgs.msg import Float64
 from benchmark_bringup.categories.common import StatusPublisher
 
 # CHANGE YOUR VELOCITY PROFILE HERE: (t_start [s], v [m/s], w [rad/s])
@@ -52,18 +51,17 @@ class VelocityProfileCat1(Node):
         self.t0_sim = None
         self.t_sim = None
         self.finished = False
-        self.create_subscription(
-            BenchmarkParams, "/benchmark_params", self.cb_bench, 50
-        )
+        prefix = str(self.declare_parameter("log_topic_prefix", "/log").value).rstrip("/")
+        self.create_subscription(Float64, f"{prefix}/wheel_1/Timestamp", self.cb_stamp, 50)
         self.create_timer(0.02, self.update_velocity)
         self.get_logger().info(
             "Category 1 test: advance 30 s, turn 180 degrees, advance (simulated time)"
         )
 
-    def cb_bench(self, msg: BenchmarkParams):
-        self.t_sim = msg.sim_time
+    def cb_stamp(self, msg: Float64):
+        self.t_sim = msg.data
         if self.t0_sim is None:
-            self.t0_sim = msg.sim_time
+            self.t0_sim = msg.data
             self.status.publish("STARTED", t0_sim=self.t0_sim, profile=PROFILE)
 
     @staticmethod
@@ -93,7 +91,8 @@ def main(args=None):
     except KeyboardInterrupt:
         pass
     finally:
-        node.pub.publish(Twist())
+        if rclpy.ok():
+            node.pub.publish(Twist())
         node.destroy_node()
         if rclpy.ok():
             rclpy.shutdown()

@@ -307,6 +307,32 @@ def generate_launch_description():
             SetLaunchConfiguration("do_fake_localization", str(use_fake))
         )
 
+        # MVSim publishes its logger columns as std_msgs/Float64 topics (one message
+        # per log row), under the vehicle namespace only if it is forced:
+        force_ns = LaunchConfiguration("force_publish_vehicle_namespace").perform(context)
+        log_topic_prefix = "/AGI/log" if force_ns.lower() == "true" else "/log"
+
+        # Low-level controller settings, for the recorder (the CTRL_* arguments are
+        # declared after this function, so their defaults are read from the YAML file)
+        with open(PID_MPC_PARAMS) as f:
+            pid_yaml = yaml.safe_load(f)
+
+        def ctrl(section, key):
+            return LaunchConfiguration(
+                f"CTRL_{section.upper()}_{key.upper()}", default=str(pid_yaml[section][key])
+            ).perform(context)
+
+        max_torque = float(ctrl("MotorSim", "max_torque"))
+        controller_info = {
+            "kp": float(ctrl("PID", "KP")),
+            "ki": float(ctrl("PID", "KI")),
+            "kd": float(ctrl("PID", "KD")),
+            "n": float(ctrl("PID", "N")),
+            "enable_antiwindup": ctrl("PID", "enable_antiwindup"),
+            "enable_feedforward": ctrl("Feedforward", "enable_feedforward"),
+            "enable_reference_filter": ctrl("ReferenceFilter", "enable_reference_filter"),
+        }
+
         # Parameters shared by all the plotters (results logging)
         plotter_params = [
             {
@@ -323,6 +349,9 @@ def generate_launch_description():
                 "planner": LaunchConfiguration("planner").perform(context).lower() if category == 3 else "",
                 "local_path_topic": local_path_topic,
                 "w_max": float(LaunchConfiguration("w_max").perform(context)),
+                "max_torque": max_torque,
+                "log_topic_prefix": log_topic_prefix,
+                **controller_info,
             }
         ]
 
@@ -377,6 +406,7 @@ def generate_launch_description():
                     executable="velocity_cat1",
                     name="velocity_cat1",
                     output="screen",
+                    parameters=[{"log_topic_prefix": log_topic_prefix}],
                 )
             )
             add_plotter("plotter_c1_benchmark")
@@ -509,6 +539,12 @@ def generate_launch_description():
                 "force_publish_vehicle_namespace": LaunchConfiguration(
                     "force_publish_vehicle_namespace"
                 ),
+                # Logger columns as topics (replaces the old /benchmark_params message)
+                "publish_log_topics": True,
+                # Stamp the messages with the wall clock, as the rest of the benchmark
+                # (Nav2 and the scripts do not use /clock): with simulated-time stamps,
+                # any lag of the simulation makes the transforms of Nav2 fail.
+                "disable_sim_time_clock": True,
             },
         ],
     )
@@ -533,15 +569,16 @@ def generate_launch_description():
         ),
     )
 
-    # Nav2 bringup
+    # Nav2 bringup (not needed, nor required to be installed, for category 1)
+    def nav2_bringup_launch_file():
+        try:
+            share = get_package_share_directory("nav2_bringup")
+        except Exception:
+            return ""
+        return os.path.join(share, "launch", "bringup_launch.py")
+
     bringup_cmd = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(
-                get_package_share_directory("nav2_bringup"),
-                "launch",
-                "bringup_launch.py",
-            )
-        ),
+        PythonLaunchDescriptionSource(nav2_bringup_launch_file()),
         condition=IfCondition(LaunchConfiguration("use_nav2")),
         launch_arguments={
             "slam": LaunchConfiguration("slam"),
@@ -583,6 +620,9 @@ def generate_launch_description():
     ld.add_action(declare_run_name_arg)
     ld.add_action(declare_plot_arg)
     ld.add_action(declare_auto_shutdown_arg)
+    ld.add_action(DeclareLaunchArgument("num_plants_south", default_value="15"))
+    ld.add_action(DeclareLaunchArgument("num_plants_north", default_value="10"))
+    ld.add_action(DeclareLaunchArgument("num_workers", default_value="0"))
     ld.add_action(validate_action)
     ld.add_action(selected_nodes)
 
@@ -675,30 +715,33 @@ def generate_launch_description():
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="K_FF", value=LaunchConfiguration("CTRL_FEEDFORWARD_K_FF")
+            name="FEEDFORWARD_GAIN",
+            value=LaunchConfiguration("CTRL_FEEDFORWARD_FEEDFORWARD_GAIN"),
         )
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="TAU_FF", value=LaunchConfiguration("CTRL_FEEDFORWARD_TAU_FF")
+            name="ENABLE_REFERENCE_FILTER",
+            value=LaunchConfiguration("CTRL_REFERENCEFILTER_ENABLE_REFERENCE_FILTER"),
         )
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="ENABLE_REFERENCEFILTER",
-            value=LaunchConfiguration("CTRL_REFERENCEFILTER_ENABLE_REFERENCEFILTER"),
+            name="REFERENCE_FILTER_TAU",
+            value=LaunchConfiguration("CTRL_REFERENCEFILTER_REFERENCE_FILTER_TAU"),
         )
     )
     ld.add_action(
         SetEnvironmentVariable(
-            name="TAU_F", value=LaunchConfiguration("CTRL_REFERENCEFILTER_TAU_F")
+            name="REFERENCE_FILTER_ORDER",
+            value=LaunchConfiguration("CTRL_REFERENCEFILTER_REFERENCE_FILTER_ORDER"),
         )
     )
-    ld.add_action(
-        SetEnvironmentVariable(
-            name="N_F", value=LaunchConfiguration("CTRL_REFERENCEFILTER_N_F")
-        )
-    )
+    # Greenhouse population (number of plants per corridor and of human workers)
+    for arg, env in (("num_plants_south", "NUM_PLANTS_SOUTH"),
+                     ("num_plants_north", "NUM_PLANTS_NORTH"),
+                     ("num_workers", "NUM_WORKERS")):
+        ld.add_action(SetEnvironmentVariable(name=env, value=LaunchConfiguration(arg)))
     ld.add_action(
         SetEnvironmentVariable(
             name="MAX_TORQUE", value=LaunchConfiguration("CTRL_MOTORSIM_MAX_TORQUE")

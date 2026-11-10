@@ -11,7 +11,9 @@
 	<!-- General simulation options -->
 	<simul_timestep>0.001</simul_timestep>	<!-- Simulation fixed-time interval for numerical integration [seconds] or 0 to autodetermine -->
 	<joystick_enabled>true</joystick_enabled>
-	<random_seed>$env{MVSIM_RANDOM_SEED}</random_seed>	<!-- Seed of the sensor-noise generators (set by the launch argument seed:=N; -1 = random) -->
+	<!-- Seed of the sensor noise and of $f{rand()}, i.e. of the arrangement of the plants
+	     (launch argument seed:=N; -1 = non-deterministic) -->
+	<random_seed>$env{MVSIM_RANDOM_SEED}</random_seed>
 
 	<georeference>
 		<latitude>36.894718</latitude>
@@ -54,8 +56,9 @@
 
 	<variable name="NUM_CORRIDORS_X" value="5"></variable>
 
-	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="15"></variable>
-	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="10"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_SOUTH" value="$env{NUM_PLANTS_SOUTH}"></variable>
+	<variable name="NUM_PLANTS_CORRIDOR_NORTH" value="$env{NUM_PLANTS_NORTH}"></variable>
+	<variable name="NUM_WORKERS" value="$f{$env{NUM_WORKERS}}"></variable>
 
 	<variable name="NUM_POLES_X" value="5"></variable>
 	<variable name="NUM_POLES_Y" value="5"></variable>
@@ -113,29 +116,13 @@
 	<variable name="BASE_MASS" value="70"/>
 	<variable name="PAYLOAD" value="$f{$env{PAYLOAD_MASS}}"/>
 	<variable name="mass" value="$f{BASE_MASS + PAYLOAD}"/>
-	<variable name="USE_ADAP_FRICTION" value="$f{$env{USE_ADAPTATIVE_FRICTION}}"/>
-	<!-- ============== PID CONTROLLER VARIABLES ================= -->
-	<param name="kp" value="$env{KP}"/>
-	<param name="ki" value="$env{KI}"/>
-	<param name="kd" value="$env{KD}"/>
-	<param name="n" value="$env{N}"/>
-	<param name="enable_antiwindup" value="$env{ENABLE_ANTIWINDUP}"/>
-	<!-- ============== FEEDFORWARDS VARIABLES ================= -->
-	<param name="enable_feedforward" value="$env{ENABLE_FEEDFORWARD}"/>
-	<param name="k_ff" value="$env{K_FF}"/>
-	<param name="tau_ff" value="$env{TAU_FF}"/>
-	<!-- ============= REFERENE FILTER VARIABLES ================= -->
-	<param name="enable_referencefilter" value="$env{ENABLE_REFERENCEFILTER}"/>
-	<param name="tau_f" value="$env{TAU_F}"/>
-	<param name="n_f" value="$env{N_F}"/>
-	<param name="max_torque" value="$env{MAX_TORQUE}"/>
-
+	<variable name="USE_ADAP_FRICTION" value="$env{USE_ADAPTATIVE_FRICTION}"/>
 	<include file="../robots/agricobiot.vehicle.xml" />
 	<!-- ============= VEHICLE DEFINITION ================= -->
 	<vehicle name="AGI" class="agricobiot">
 		<init_pose>10.1 3 90</init_pose>
 
-		<chassis mass="$f{$env{mass}}" />
+		<chassis mass="$f{mass}" />
 
 		<include file="../sensors/rplidar-a2.sensor.xml" raytrace_3d="true" sensor_x="0" sensor_y="0" sensor_z="0.45" sensor_yaw="180" sensor_name="laser1" sensor_hz="10.0" />
 		<!-- RGB-D camera disabled: it is not used by any benchmark category and it is the
@@ -289,6 +276,95 @@
 			</block>
 		</for>
 
+	</for>
+
+	<!-- ================================================================================================ -->
+	<!-- Terrain sectors as PropertyRegion elements: friction coefficient and rolling resistance -->
+	<!-- ================================================================================================ -->
+	<if condition="${USE_ADAP_FRICTION}">
+		<!-- Friction zone: Solid Sand (mu=0.5) -->
+		<element class="property_region">
+			<property_name>friction_mu</property_name>
+			<value_double>0.5</value_double>
+			<x_min>2.0</x_min> <y_min>1.09</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>12.7</y_max> <z_max>3.0</z_max>
+		</element>
+		<element class="property_region">
+			<property_name>friction_C_rr</property_name>
+			<value_double>0.05</value_double>
+			<x_min>2.0</x_min> <y_min>1.09</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>12.7</y_max> <z_max>3.0</z_max>
+		</element>
+
+		<!-- Friction zone: Cement (mu=0.9) -->
+		<element class="property_region">
+			<property_name>friction_mu</property_name>
+			<value_double>0.9</value_double>
+			<x_min>2.0</x_min> <y_min>12.7</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>15.0</y_max> <z_max>3.0</z_max>
+		</element>
+		<element class="property_region">
+			<property_name>friction_C_rr</property_name>
+			<value_double>0.01</value_double>
+			<x_min>2.0</x_min> <y_min>12.7</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>15.0</y_max> <z_max>3.0</z_max>
+		</element>
+
+		<!-- Friction zone: Slim Sand (mu=0.2) -->
+		<element class="property_region">
+			<property_name>friction_mu</property_name>
+			<value_double>0.2</value_double>
+			<x_min>2.0</x_min> <y_min>15.0</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>21.6</y_max> <z_max>3.0</z_max>
+		</element>
+		<element class="property_region">
+			<property_name>friction_C_rr</property_name>
+			<value_double>0.10</value_double>
+			<x_min>2.0</x_min> <y_min>15.0</y_min> <z_min>-1.0</z_min>
+			<x_max>24.7</x_max> <y_max>21.6</y_max> <z_max>3.0</z_max>
+		</element>
+	</if>
+
+	<!-- ================================================================================================ -->
+	<!-- Human workers (optional, controlled by NUM_WORKERS env var) -->
+	<!-- ================================================================================================ -->
+	<actor:class name="greenhouse_worker">
+		<walking_speed>0.8</walking_speed>
+		<running_speed>1.2</running_speed>
+		<height>1.75</height>
+		<collision_radius>0.3</collision_radius>
+		<animation_idle>HumanArmature|Man_Idle</animation_idle>
+		<animation_walk>HumanArmature|Man_Walk</animation_walk>
+		<animation_run>HumanArmature|Man_Run</animation_run>
+		<visual>
+			<model_uri>https://mrpt.github.io/mvsim-models/AnimatedMenCharacters.zip/FBX/Male_Shirt.fbx</model_uri>
+			<model_scale>0.0027</model_scale>
+			<model_roll>90.0</model_roll>
+			<model_yaw>90.0</model_yaw>
+		</visual>
+	</actor:class>
+
+	<!-- Spawn workers on the outer east side of each corridor's plant rows (opposite from robot) -->
+	<for var="iW" from="0" to="$f{NUM_WORKERS-1}">
+		<actor class="greenhouse_worker">
+			<init_pose>$f{5.1+4*(iW % NUM_CORRIDORS_X)} $f{19.0+rand()*0.5} -90</init_pose>
+			<path loop="true">
+				<!-- Walk south, then turn to face plants (west=180) and pause -->
+				<waypoint>$f{5.5+4*(iW % NUM_CORRIDORS_X)} $f{17.5+rand()*0.3} -90</waypoint>
+				<waypoint pause="3.0">$f{5.3+4*(iW % NUM_CORRIDORS_X)} $f{17.5+rand()*1.3} 180</waypoint>
+				<!-- Continue south, turn to face plants and collect -->
+				<waypoint>$f{5.4+4*(iW % NUM_CORRIDORS_X)} $f{16.5+rand()*0.3} -90</waypoint>
+				<waypoint pause="5.0">$f{5.3+4*(iW % NUM_CORRIDORS_X)} $f{16.5+rand()*1.3} 180</waypoint>
+				<!-- Another collection stop -->
+				<waypoint>$f{5.5+4*(iW % NUM_CORRIDORS_X)} $f{15.5+rand()*0.3} -90</waypoint>
+				<waypoint pause="4.0">$f{5.3+4*(iW % NUM_CORRIDORS_X)} $f{15.5+rand()*1.3} 180</waypoint>
+				<!-- Walk back north -->
+				<waypoint>$f{5.4+4*(iW % NUM_CORRIDORS_X)} $f{17.0+rand()*0.3} 90</waypoint>
+				<waypoint pause="2.0">$f{5.3+4*(iW % NUM_CORRIDORS_X)} $f{17.0+rand()*1.3} 180</waypoint>
+				<!-- Return to starting area -->
+				<waypoint pause="3.0">$f{5.3+4*(iW % NUM_CORRIDORS_X)} $f{19.0+rand()*1.5} 90</waypoint>
+			</path>
+		</actor>
 	</for>
 
 </mvsim_world>

@@ -13,8 +13,8 @@
 
 Every plotter:
   * logs the raw signals of the run (no metric is computed from truncated buffers);
-  * timestamps every sample with the wall clock (MVSim runs in real time and does
-    not publish /clock) and, for the low-level signals, also with the simulated time;
+  * timestamps every sample with the wall clock and, for the low-level signals,
+    also with the simulated time;
   * synchronises the start of the evaluation window with the category script,
     which publishes a STARTED event on /benchmark/status;
   * at the end of the run writes the CSV files, metadata, metrics and figures to
@@ -34,14 +34,79 @@ import rclpy
 from rclpy.node import Node
 from rclpy.qos import QoSProfile, DurabilityPolicy, ReliabilityPolicy, HistoryPolicy
 from rcl_interfaces.msg import ParameterDescriptor
-from std_msgs.msg import String
+from types import SimpleNamespace
 
-from benchmark_msg.msg import BenchmarkParams
+from std_msgs.msg import Float64, String
 
 from benchmark_bringup.metrics import MetricsConfig, sector_from_mu
 
 STATUS_TOPIC = "/benchmark/status"
 TERMINAL_STATES = ("SUCCEEDED", "FAILED", "CANCELED", "TIMEOUT", "FINISHED")
+
+# Columns of the MVSim logger of the first wheel used by the benchmark (MVSim publishes
+# every column of its vehicle logs as a std_msgs/Float64 topic <prefix>/<logger>/<column>
+# when its parameter publish_log_topics is set). The PID columns refer to the whole
+# controller (both motors); friction_mu is the friction coefficient in effect at the wheel.
+WHEEL_LOG_COLUMNS = {
+    "sp_vel_l": "pid_sp_vel_l",
+    "sp_vel_r": "pid_sp_vel_r",
+    "act_vel_l": "pid_act_vel_l",
+    "act_vel_r": "pid_act_vel_r",
+    "error_l": "pid_error_l",
+    "error_r": "pid_error_r",
+    "torque_l": "pid_torque_l",
+    "torque_r": "pid_torque_r",
+    "torque_slope": "pid_feedforward",
+    "mu": "friction_mu",
+}
+POSE_LOG_COLUMNS = {"pitch": "q4pitch"}
+
+# Friction coefficients of the terrain sectors 1-3 of the world file (sector index)
+MU_ZONES = [0.5, 0.9, 0.2]
+
+
+class MVSimLogListener:
+    """Rebuilds the rows of the MVSim wheel log from its Float64 topics.
+
+    MVSim publishes the columns of each log row one after another, in alphabetical
+    order, starting with "Timestamp". So, when a new Timestamp arrives, the latest
+    value of every column belongs to the previous row, which is complete and is
+    passed to `callback` as an object with the fields of the old benchmark message."""
+
+    def __init__(self, node: Node, prefix: str, callback, max_torque: float, info: dict):
+        self.callback = callback
+        self.max_torque = max_torque
+        self.info = info  # controller settings shown in the figures
+        self.values = {k: 0.0 for k in list(WHEEL_LOG_COLUMNS) + list(POSE_LOG_COLUMNS)}
+        self.prev_stamp: Optional[float] = None
+        prefix = prefix.rstrip("/")
+        node.create_subscription(Float64, f"{prefix}/wheel_1/Timestamp", self._cb_stamp, 200)
+        for field, col in WHEEL_LOG_COLUMNS.items():
+            node.create_subscription(Float64, f"{prefix}/wheel_1/{col}", self._setter(field), 200)
+        for field, col in POSE_LOG_COLUMNS.items():
+            node.create_subscription(Float64, f"{prefix}/pose/{col}", self._setter(field), 200)
+
+    def _setter(self, field: str):
+        def cb(msg: Float64):
+            self.values[field] = msg.data
+
+        return cb
+
+    def _cb_stamp(self, msg: Float64):
+        if self.prev_stamp is not None:
+            self.callback(
+                SimpleNamespace(
+                    sim_time=self.prev_stamp,
+                    max_torque=self.max_torque,
+                    mu_zone1=MU_ZONES[0],
+                    mu_zone2=MU_ZONES[1],
+                    mu_zone3=MU_ZONES[2],
+                    **self.info,
+                    **self.values,
+                )
+            )
+        self.prev_stamp = msg.data
+
 
 BENCHMARK_HEADER = [
     "t_wall", "sim_time", "sp_vel_l", "sp_vel_r", "act_vel_l", "act_vel_r",
@@ -123,6 +188,16 @@ class BenchmarkRecorder(Node):
             "horizon": 1.0,           # [s] prediction horizon of SAE2
             "lidar_min_range": 0.5,
             "goal_tolerance": 0.3,
+            "max_torque": 500.0,      # [N m] motor torque saturation (MotorSim.max_torque)
+            "log_topic_prefix": "/log",  # MVSim log topics of the robot
+            # Low-level controller settings (only shown in the figures)
+            "kp": 0.0,
+            "ki": 0.0,
+            "kd": 0.0,
+            "n": 0.0,
+            "enable_antiwindup": "false",
+            "enable_feedforward": "false",
+            "enable_reference_filter": "false",
         }
         for k, v in defaults.items():
             self.declare_parameter(k, v, dyn)
@@ -180,10 +255,16 @@ class BenchmarkRecorder(Node):
 
         # Low-level data (all categories)
         self.bench_rows: List[list] = []
-        self.last_bench: Optional[BenchmarkParams] = None
+        self.last_bench = None
 
         self.create_subscription(String, STATUS_TOPIC, self._cb_status, status_qos())
-        self.create_subscription(BenchmarkParams, "/benchmark_params", self._cb_bench, 100)
+        info = {k: float(p(k)) for k in ("kp", "ki", "kd", "n")}
+        for k in ("enable_antiwindup", "enable_feedforward"):
+            info[k] = str(p(k)).lower() == "true"
+        info["enable_referencefilter"] = str(p("enable_reference_filter")).lower() == "true"
+        self.log_listener = MVSimLogListener(
+            self, str(p("log_topic_prefix")), self._cb_bench, float(p("max_torque")), info
+        )
 
     # ------------------------------------------------------------------ helpers
     @staticmethod
@@ -215,7 +296,7 @@ class BenchmarkRecorder(Node):
             self._terminal_seen_at = self.now()
             self.get_logger().info(f"Run finished with status {state}.")
 
-    def _cb_bench(self, msg: BenchmarkParams):
+    def _cb_bench(self, msg):
         if self.done:
             return
         self.last_bench = msg
@@ -230,7 +311,7 @@ class BenchmarkRecorder(Node):
         )
         self.on_bench(msg)
 
-    def on_bench(self, msg: BenchmarkParams):
+    def on_bench(self, msg):
         """Hook for subclasses (e.g. category 1 termination in simulated time)."""
 
     # ------------------------------------------------------------------ output
@@ -299,7 +380,7 @@ class BenchmarkRecorder(Node):
 
     def run_quality(self, rtf_tol: float = 0.05) -> dict:
         """Real-time factor (simulated time / wall-clock time) of the evaluation
-        window, and the largest gap between consecutive /benchmark_params samples.
+        window, and the largest gap between consecutive samples of the MVSim log.
         MVSim runs against the wall clock, so a run is only valid if RTF ~ 1."""
         t0 = self.t0_wall if self.t0_wall is not None else -float("inf")
         t1 = self.t_end_wall if self.t_end_wall is not None else float("inf")
