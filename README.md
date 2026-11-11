@@ -120,16 +120,16 @@ The benchmark is structured according to a hierarchical control architecture wit
 
 1. **Low level (PI with anti-windup, Feedforward and Reference Filter)**: wheel-speed control of the motors, implemented inside the MVSim vehicle model [PID parameter](benchmark_bringup/benchmark_bringup/control_params/c1_pid_params.yaml) file. This layer is responsible for translating velocity commands into motor torques while accounting for realistic vehicle dynamics, including wheel–ground interactions. The low-level control scheme adopted in the benchmark is illustrated in the corresponding block diagram provided in the accompanying article.
 
-<img width="800" height="300" alt="PID_2_v4" src="https://github.com/user-attachments/assets/f9b8fdde-96af-44e1-bcbf-661688c1e610" />
+<img width="800" height="400" alt="PID_2_v4" src="https://github.com/user-attachments/assets/f9b8fdde-96af-44e1-bcbf-661688c1e610" />
 
 
 2. **Mid-level (path following)**: Nav2 controller plugin. The reference controller is the [Timed Elastic Band (TEB-MPC)](https://github.com/FerCanAra/teb_local_planner_benchmark) local planner, managed through the Nav2 framework. The TEB-MPC module operates as a plugin-based component, allowing the user to fully replace or tune its [MPC parameters](benchmark_bringup/benchmark_bringup/control_params/c2_mpc_teb_params.yaml). This design supports the evaluation of different trajectory-following strategies under identical environmental and disturbance conditions. The mid-level control architecture is depicted in the corresponding control diagram.
 
-<img width="800" height="300" alt="MPC_2_v2" src="https://github.com/user-attachments/assets/b946e34d-9664-4810-97b0-eff368f0857c" />
+<img width="800" height="200" alt="MPC_2_v2" src="https://github.com/user-attachments/assets/b946e34d-9664-4810-97b0-eff368f0857c" />
 
 3. **High-level (path planning):**: Nav2 planner plugin. The reference planner is [Lazzy Theta star](https://idm-lab.org/bib/abstracts/papers/aaai10b.pdf) global planner is employed and integrated via the Nav2 framework. All [planning parameters](benchmark_bringup/benchmark_bringup/control_params/c3_theta_start_params.yaml) can be modified, enabling users to analyze the impact of high-level planning decisions on overall navigation performance. The complete high-level control structure is presented in the associated schematic.
 
-<img width="800" height="300" alt="Planner_v2" src="https://github.com/user-attachments/assets/ae0cb8fc-6827-4f01-9c03-95959a567fec" />
+<img width="800" height="200" alt="Planner_v2" src="https://github.com/user-attachments/assets/ae0cb8fc-6827-4f01-9c03-95959a567fec" />
 
 ### Benchmark Categories
 
