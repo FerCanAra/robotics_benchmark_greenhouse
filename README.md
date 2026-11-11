@@ -2,7 +2,7 @@ A ROS 2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Rob
 ======================================
 [![arXiv](https://img.shields.io/badge/arXiv-preprint-b31b1b.svg)](https://arxiv.org/abs/2602.15162)
 [![Last Updated](https://img.shields.io/badge/last%20updated-2026--09-blue)](.)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22679881.svg)](https://zenodo.org/records/24059343)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.22679881.svg)](https://doi.org/10.5281/zenodo.24132939)
 [![License](https://img.shields.io/badge/License-BSD_3--Clause-blue.svg)](LICENSE)
 
 This repository provides a standardised, reproducible benchmark for mobile robotics in greenhouse environments, designed to evaluate control laws and navigation algorithms under representative operating conditions. The framework combines a physics-based simulation of a real Mediterranean greenhouse (Agroconnect, Almería, Spain) with a hierarchical control architecture spanning low-, mid- and high-level control. Parameterised disturbances (payload, terrain type and slope), normalised performance indices, task-level indicators and a statistical protocol enable fair, repeatable comparisons of control strategies, while a plugin-based design allows custom controllers and planners to be integrated without modifying the benchmark. It used [MultiVehicle simulator (MVSim)](https://github.com/MRPT/mvsim), a lightweight dynamical simulator for 2D ("2.5D") vehicles that models wheel–ground contact forces and typical robot sensors, and [Navigation2 (Nav2) ](https://github.com/ros-navigation/navigation2?tab=readme-ov-file) for the mid- and high-level layers. The complete benchmark runs in real time using about two CPU cores (at most 2.3 cores of a 2017 desktop processor, Intel Core i7-8700), so it can be used on standard computers.
@@ -45,7 +45,7 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 ------------------
 ```
 @article{canadas2026ros2,
-  title={A ROS2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Robots for Mediterranean Greenhouses},
+  title={A ROS 2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Robots for Mediterranean Greenhouses},
   author={Ca{\~n}adas-Ar{\'a}nega, Fernando and Ma{\~n}as-{\'A}lvarez, Francisco J. and Guzmán, Jos{\'e} L. Moreno, Jos{\'e} C. and Blanco-Claraco, Jos{\'e} L.},
   journal={arXiv preprint arXiv:2602.15162},
   year={2026}
@@ -56,10 +56,10 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 ```
 @software{agricultural_benchmark,
   author  = {Ca{\~n}adas-Ar{\'a}nega, Fernando},
-  title   = {A Benchmark for Evaluating Advanced Control Strategies in Mobile Robots for Mediterranean Greenhouses},
-  version = {1.1.0},
+  title   = {A ROS 2 Benchmarking Framework for Hierarchical Control Strategies in Mobile Robots for Mediterranean Greenhouses},
+  version = {1.2.0},
   year    = {2026},
-  doi     = {10.5281/zenodo.22679881},
+  doi     = {10.5281/zenodo.24132939},
   url     = {https://github.com/FerCanAra/robotics_benchmark_greenhouse}
 }
 ```
