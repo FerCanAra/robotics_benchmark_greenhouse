@@ -12,9 +12,11 @@ ARG MVSIM_REF=2cc54561
 ENV DEBIAN_FRONTEND=noninteractive
 SHELL ["/bin/bash", "-c"]
 
-# Nav2 from the main ROS 2 repository, held so that it is not upgraded below:
+# Nav2 from the main ROS 2 repository, held so that it is not upgraded below.
+# RViz (with the Nav2 plugins) and foxglove_bridge are only used for visualization:
 RUN apt-get update && \
-    apt-get install -y git ros-humble-navigation2 ros-humble-nav2-bringup python3-scipy && \
+    apt-get install -y git ros-humble-navigation2 ros-humble-nav2-bringup python3-scipy \
+      ros-humble-rviz2 ros-humble-nav2-rviz-plugins ros-humble-foxglove-bridge && \
     apt-mark hold $(dpkg-query -W -f='${Package}\n' 'ros-humble-nav2*' 'ros-humble-navigation2') && \
     rm -rf /var/lib/apt/lists/*
 

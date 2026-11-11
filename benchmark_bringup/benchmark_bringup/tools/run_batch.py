@@ -62,6 +62,7 @@ CONDITIONS = {
 COMMON_ARGS = {
     "headless": "True",
     "use_rviz": "False",
+    "use_foxglove": "False",
     "plot": "False",
     "auto_shutdown": "True",
     "localization": "fake",

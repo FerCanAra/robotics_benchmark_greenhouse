@@ -45,12 +45,9 @@ MVSIM_WORLD_FILE = os.path.join(
 MAP_FILE = os.path.join(
     benchmarkDir, "maps", "greenhouse_benchmark.yaml"
 )  # Default slam map file
-RVIZ2_FILE_C2 = os.path.join(
-    benchmarkDir, "rviz", "c2_greenhouse.rviz"
-)  # Default rviz2 config file for category 2
-RVIZ2_FILE_C3 = os.path.join(
-    benchmarkDir, "rviz", "c3_greenhouse.rviz"
-)  # Default rviz2 config file for category 3
+RVIZ2_FILE = os.path.join(
+    benchmarkDir, "rviz", "greenhouse.rviz"
+)  # Default rviz2 config file (categories 2 and 3)
 
 PID_MPC_PARAMS = os.path.join(
     benchmarkDir, "control_params", "c1_pid_params.yaml"
@@ -129,7 +126,15 @@ def generate_launch_description():
     use_rviz_arg = DeclareLaunchArgument("use_rviz", default_value="True")
     use_nav2_arg = DeclareLaunchArgument("use_nav2", default_value="True")
     rviz_config_file_arg = DeclareLaunchArgument(
-        "rviz_config_file", default_value=RVIZ2_FILE_C2
+        "rviz_config_file", default_value=RVIZ2_FILE
+    )
+    use_foxglove_arg = DeclareLaunchArgument(
+        "use_foxglove",
+        default_value="True",
+        description="Run foxglove_bridge, if it is installed (ignored otherwise)",
+    )
+    foxglove_port_arg = DeclareLaunchArgument(
+        "foxglove_port", default_value="8765", description="WebSocket port of foxglove_bridge"
     )
     # Nav2 arguments
     declare_slam_launch_arg = DeclareLaunchArgument(
@@ -432,7 +437,6 @@ def generate_launch_description():
         # CATEGORY 3
         #############################
         elif category == 3:
-            actions.append(SetLaunchConfiguration("rviz_config_file", RVIZ2_FILE_C3))
             actions.append(
                 Node(
                     package="benchmark_bringup",
@@ -558,6 +562,27 @@ def generate_launch_description():
         arguments=["-d", LaunchConfiguration("rviz_config_file")],
     )
 
+    # Foxglove bridge: optional, only if the package is installed
+    def foxglove_bridge(context):
+        if LaunchConfiguration("use_foxglove").perform(context).lower() != "true":
+            return []
+        try:
+            get_package_share_directory("foxglove_bridge")
+        except Exception:
+            print("[INFO] foxglove_bridge is not installed: running without it.")
+            return []
+        return [
+            Node(
+                package="foxglove_bridge",
+                executable="foxglove_bridge",
+                name="foxglove_bridge",
+                output="log",
+                parameters=[{"port": int(LaunchConfiguration("foxglove_port").perform(context))}],
+            )
+        ]
+
+    foxglove_action = OpaqueFunction(function=foxglove_bridge)
+
     # acml init pose publisher, necesary for Nav2 localization
     init_pose_node = Node(
         package="benchmark_bringup",
@@ -605,6 +630,8 @@ def generate_launch_description():
     ld.add_action(use_rviz_arg)
     ld.add_action(use_nav2_arg)
     ld.add_action(rviz_config_file_arg)
+    ld.add_action(use_foxglove_arg)
+    ld.add_action(foxglove_port_arg)
     ld.add_action(declare_category_arg)
     ld.add_action(declare_payload_arg)
     ld.add_action(declare_terrain_slope_arg)
@@ -753,6 +780,7 @@ def generate_launch_description():
     ld.add_action(mvsim_node)
     ld.add_action(init_pose_node)
     ld.add_action(rviz2_node)
+    ld.add_action(foxglove_action)
     ld.add_action(bringup_cmd)
 
     return ld

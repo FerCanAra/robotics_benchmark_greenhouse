@@ -1,0 +1,425 @@
+Panels:
+  - Class: rviz_common/Displays
+    Help Height: 0
+    Name: Displays
+    Property Tree Widget:
+      Expanded:
+        - /Maps1
+        - /Paths1
+        - /Robot1
+      Splitter Ratio: 0.6
+    Tree Height: 520
+  - Class: nav2_rviz_plugins/Navigation 2
+    Name: Navigation 2
+Visualization Manager:
+  Class: ""
+  Displays:
+    - Alpha: 0.25
+      Cell Size: 1
+      Class: rviz_default_plugins/Grid
+      Color: 140; 140; 140
+      Enabled: true
+      Line Style:
+        Line Width: 0.03
+        Value: Lines
+      Name: Grid (1 m)
+      Normal Cell Count: 0
+      Offset:
+        X: 13
+        Y: 11
+        Z: 0
+      Plane: XY
+      Plane Cell Count: 26
+      Reference Frame: map
+      Value: true
+    - Class: rviz_common/Group
+      Displays:
+        - Alpha: 0.8
+          Class: rviz_default_plugins/Map
+          Color Scheme: map
+          Draw Behind: true
+          Enabled: true
+          Name: Prior map
+          Topic:
+            Depth: 1
+            Durability Policy: Transient Local
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /map
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /map_updates
+          Use Timestamp: false
+          Value: true
+        - Alpha: 0.15
+          Class: rviz_default_plugins/Map
+          Color Scheme: costmap
+          Draw Behind: false
+          Enabled: false
+          Name: Global costmap
+          Topic:
+            Depth: 1
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_costmap/costmap
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_costmap/costmap_updates
+          Use Timestamp: false
+          Value: false
+        - Alpha: 0.6
+          Class: rviz_default_plugins/Map
+          Color Scheme: costmap
+          Draw Behind: false
+          Enabled: true
+          Name: Local costmap
+          Topic:
+            Depth: 1
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/costmap
+          Update Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/costmap_updates
+          Use Timestamp: false
+          Value: true
+      Enabled: true
+      Name: Maps
+    - Class: rviz_common/Group
+      Displays:
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz_default_plugins/Path
+          Color: 52; 120; 246
+          Enabled: true
+          Head Diameter: 0.3
+          Head Length: 0.2
+          Length: 0.3
+          Line Style: Billboards
+          Line Width: 0.06
+          Name: Global plan
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0.02
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Radius: 0.03
+          Shaft Diameter: 0.1
+          Shaft Length: 0.1
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /plan
+          Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz_default_plugins/Path
+          Color: 255; 170; 0
+          Enabled: true
+          Head Diameter: 0.3
+          Head Length: 0.2
+          Length: 0.3
+          Line Style: Billboards
+          Line Width: 0.04
+          Name: Reference path (TEB)
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0.03
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Radius: 0.03
+          Shaft Diameter: 0.1
+          Shaft Length: 0.1
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /global_plan
+          Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz_default_plugins/Path
+          Color: 255; 170; 0
+          Enabled: true
+          Head Diameter: 0.3
+          Head Length: 0.2
+          Length: 0.3
+          Line Style: Billboards
+          Line Width: 0.04
+          Name: Reference path (RPP, DWB)
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0.03
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Radius: 0.03
+          Shaft Diameter: 0.1
+          Shaft Length: 0.1
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /received_global_plan
+          Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz_default_plugins/Path
+          Color: 255; 170; 0
+          Enabled: true
+          Head Diameter: 0.3
+          Head Length: 0.2
+          Length: 0.3
+          Line Style: Billboards
+          Line Width: 0.04
+          Name: Reference path (MPPI)
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0.03
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Radius: 0.03
+          Shaft Diameter: 0.1
+          Shaft Length: 0.1
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /transformed_global_plan
+          Value: true
+        - Alpha: 1
+          Buffer Length: 1
+          Class: rviz_default_plugins/Path
+          Color: 0; 220; 90
+          Enabled: true
+          Head Diameter: 0.3
+          Head Length: 0.2
+          Length: 0.3
+          Line Style: Billboards
+          Line Width: 0.06
+          Name: Local plan
+          Offset:
+            X: 0
+            Y: 0
+            Z: 0.05
+          Pose Color: 255; 85; 255
+          Pose Style: None
+          Radius: 0.03
+          Shaft Diameter: 0.1
+          Shaft Length: 0.1
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_plan
+          Value: true
+        - Class: rviz_default_plugins/MarkerArray
+          Enabled: true
+          Name: Goal
+          Namespaces:
+            {}
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /goal_markers
+          Value: true
+      Enabled: true
+      Name: Paths
+    - Class: rviz_common/Group
+      Displays:
+        - Class: rviz_default_plugins/MarkerArray
+          Enabled: true
+          Name: Chassis
+          Namespaces:
+            {}
+          Topic:
+            Depth: 5
+            Durability Policy: Transient Local
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /chassis_markers
+          Value: true
+        - Alpha: 1
+          Class: rviz_default_plugins/Polygon
+          Color: 255; 60; 60
+          Enabled: true
+          Name: Footprint
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /local_costmap/published_footprint
+          Value: true
+        - Alpha: 1
+          Autocompute Intensity Bounds: true
+          Class: rviz_default_plugins/LaserScan
+          Color: 255; 40; 40
+          Color Transformer: FlatColor
+          Decay Time: 0
+          Enabled: true
+          Name: 2D lidar
+          Position Transformer: XYZ
+          Selectable: true
+          Size (Pixels): 3
+          Size (m): 0.06
+          Style: Flat Squares
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            Filter size: 10
+            History Policy: Keep Last
+            Reliability Policy: Best Effort
+            Value: /laser1
+          Use Fixed Frame: true
+          Use rainbow: true
+          Value: true
+        - Angle Tolerance: 0.1
+          Class: rviz_default_plugins/Odometry
+          Covariance:
+            Orientation:
+              Alpha: 0.5
+              Color: 255; 255; 127
+              Color Style: Unique
+              Frame: Local
+              Offset: 1
+              Scale: 1
+              Value: false
+            Position:
+              Alpha: 0.3
+              Color: 204; 51; 204
+              Scale: 1
+              Value: false
+            Value: false
+          Enabled: true
+          Keep: 400
+          Name: Trajectory (ground truth)
+          Position Tolerance: 0.15
+          Shape:
+            Alpha: 1
+            Axes Length: 1
+            Axes Radius: 0.1
+            Color: 230; 230; 230
+            Head Length: 0.08
+            Head Radius: 0.08
+            Shaft Length: 0.15
+            Shaft Radius: 0.03
+            Value: Arrow
+          Topic:
+            Depth: 5
+            Durability Policy: Volatile
+            Filter size: 10
+            History Policy: Keep Last
+            Reliability Policy: Reliable
+            Value: /base_pose_ground_truth
+          Value: true
+        - Class: rviz_default_plugins/TF
+          Enabled: false
+          Frame Timeout: 15
+          Frames:
+            All Enabled: true
+          Marker Scale: 1
+          Name: TF
+          Show Arrows: false
+          Show Axes: true
+          Show Names: true
+          Update Interval: 0
+          Value: false
+      Enabled: true
+      Name: Robot
+  Enabled: true
+  Global Options:
+    Background Color: 38; 41; 46
+    Fixed Frame: map
+    Frame Rate: 30
+  Name: root
+  Tools:
+    - Class: rviz_default_plugins/Interact
+      Hide Inactive Objects: true
+    - Class: rviz_default_plugins/MoveCamera
+    - Class: rviz_default_plugins/Select
+    - Class: rviz_default_plugins/Measure
+      Line color: 128; 128; 0
+    - Class: rviz_default_plugins/SetGoal
+      Topic:
+        Depth: 5
+        Durability Policy: Volatile
+        History Policy: Keep Last
+        Reliability Policy: Reliable
+        Value: /goal_pose
+  Transformation:
+    Current:
+      Class: rviz_default_plugins/TF
+  Value: true
+  Views:
+    Current:
+      Angle: 0
+      Class: rviz_default_plugins/TopDownOrtho
+      Enable Stereo Rendering:
+        Stereo Eye Separation: 0.06
+        Stereo Focal Distance: 1
+        Swap Stereo Eyes: false
+        Value: false
+      Invert Z Axis: false
+      Name: Current View
+      Near Clip Distance: 0.01
+      Scale: 38
+      Target Frame: <Fixed Frame>
+      Value: TopDownOrtho (rviz_default_plugins)
+      X: 13.3
+      Y: 10.9
+    Saved:
+      - Class: rviz_default_plugins/ThirdPersonFollower
+        Distance: 9
+        Enable Stereo Rendering:
+          Stereo Eye Separation: 0.06
+          Stereo Focal Distance: 1
+          Swap Stereo Eyes: false
+          Value: false
+        Field of View: 0.785
+        Focal Point:
+          X: 1.5
+          Y: 0
+          Z: 0
+        Focal Shape Fixed Size: true
+        Focal Shape Size: 0.05
+        Invert Z Axis: false
+        Name: Follow robot
+        Near Clip Distance: 0.01
+        Pitch: 0.6
+        Target Frame: base_link
+        Value: ThirdPersonFollower (rviz_default_plugins)
+        Yaw: 3.14
+Window Geometry:
+  Displays:
+    collapsed: false
+  Height: 1000
+  Hide Left Dock: false
+  Hide Right Dock: true
+  Navigation 2:
+    collapsed: false
+  Width: 1500
+  X: 60
+  Y: 60
