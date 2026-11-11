@@ -182,13 +182,22 @@ where:
 
 The launch file applies the common limits to whichever controller is selected, so that all of them are evaluated under the same conditions.
 
-The visualization is optional: `use_rviz:=False` disables RViz (Categories 2 and 3, with the configuration in [`rviz/greenhouse.rviz`](benchmark_bringup/benchmark_bringup/rviz/greenhouse.rviz)), `plot:=False` the real-time plots and `headless:=True` the MVSim window. If [foxglove_bridge](https://docs.foxglove.dev/docs/visualization/ros-foxglove-bridge) is installed (`sudo apt install ros-$ROS_DISTRO-foxglove-bridge`), it is also started (port `foxglove_port:=8765`; `use_foxglove:=False` disables it), and [Foxglove](https://foxglove.dev/) can show the run with the layout in [`foxglove/greenhouse_layout.json`](benchmark_bringup/benchmark_bringup/foxglove/greenhouse_layout.json). Without the package, the benchmark runs without it.
-
 Example:
 
 [Benchmark category 3 demo](https://youtu.be/-QOWn2Ga2w0)
 
 For a complete description of the simulator architecture, control schemes, evaluation metrics, and experimental methodology, the reader is referred to the associated journal/conference article, which provides a detailed and rigorous explanation of the benchmark framework.
+
+
+🖥️ Visualization
+--------------------
+During a run, the MVSim window shows the 3D view of the greenhouse and the real-time plots show the signals of each level. In Categories 2 and 3, RViz shows the prior map, the local costmap, the global plan, the reference path of the controller, the local plan, the lidar scan and the trajectory of the robot. [Foxglove](https://foxglove.dev/) shows the same scene together with the velocity commands, the wheel signals of the low-level controller and the ROS log.
+
+<img src="./docs/rviz_category3.jpg" width="700" alt="RViz view of a Category 3 run">
+
+<img src="./docs/foxglove_category3.jpg" width="700" alt="Foxglove layout during a Category 3 run">
+
+The visualization is optional: `use_rviz:=False` disables RViz (Categories 2 and 3, with the configuration in [`rviz/greenhouse.rviz`](benchmark_bringup/benchmark_bringup/rviz/greenhouse.rviz)), `plot:=False` the real-time plots and `headless:=True` the MVSim window. If [foxglove_bridge](https://docs.foxglove.dev/docs/visualization/ros-foxglove-bridge) is installed (`sudo apt install ros-$ROS_DISTRO-foxglove-bridge`), it is also started (port `foxglove_port:=8765`; `use_foxglove:=False` disables it), and [Foxglove](https://foxglove.dev/) can show the run with the layout in [`foxglove/greenhouse_layout.json`](benchmark_bringup/benchmark_bringup/foxglove/greenhouse_layout.json). Without the package, the benchmark runs without it.
 
 
 📊 Metrics and Data Logging
