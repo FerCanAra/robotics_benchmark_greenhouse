@@ -25,6 +25,7 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 - The seed (`seed:=N`) now also fixes the arrangement of the plants, so a run is fully reproducible from its seed.
 - The skid-steer robot turns at the commanded rate: the MVSim `twist_pid` controller compensates the turn slip of the wheels, and the gain of the wheel PI is `KI = 200` (closed-loop poles -2.68 ± 2.68j s⁻¹, damping 0.71) instead of 40, whose slow pole made the robot take several seconds to reach the commanded turn rate.
 - A Docker image with the complete benchmark is available (see [Docker](#docker)).
+- Visualization: a new RViz configuration and a Foxglove layout. The Docker image includes RViz and foxglove_bridge: `GUI=1` also opens RViz (`WITHOUT_RVIZ=1` leaves it out) and `FOXGLOVE=1` starts the bridge. Locally, foxglove_bridge is started only if it is installed.
 - New validity check of the runs: the median period of the ground-truth pose published by MVSim must not exceed 35 ms. On slow computers the simulator can keep a real-time factor of 1 while publishing the robot state (pose, odometry, TF) at a lower rate, which delays the feedback of the navigation stack.
 
 📑 What's new in v1.1.0
@@ -181,6 +182,8 @@ where:
 
 The launch file applies the common limits to whichever controller is selected, so that all of them are evaluated under the same conditions.
 
+The visualization is optional: `use_rviz:=False` disables RViz (Categories 2 and 3, with the configuration in [`rviz/greenhouse.rviz`](benchmark_bringup/benchmark_bringup/rviz/greenhouse.rviz)), `plot:=False` the real-time plots and `headless:=True` the MVSim window. If [foxglove_bridge](https://docs.foxglove.dev/docs/visualization/ros-foxglove-bridge) is installed (`sudo apt install ros-$ROS_DISTRO-foxglove-bridge`), it is also started (port `foxglove_port:=8765`; `use_foxglove:=False` disables it), and [Foxglove](https://foxglove.dev/) can show the run with the layout in [`foxglove/greenhouse_layout.json`](benchmark_bringup/benchmark_bringup/foxglove/greenhouse_layout.json). Without the package, the benchmark runs without it.
+
 Example:
 
 [Benchmark category 3 demo](https://youtu.be/-QOWn2Ga2w0)
@@ -257,12 +260,14 @@ Step by step, on a fresh Ubuntu computer:
 - **GPU**: MVSim renders the sensors with OpenGL. Without GPU access the simulation runs much slower than real time and the validity check rejects every run. `run_campaign.sh` gives the container access to an NVIDIA GPU (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) or to `/dev/dri` (Intel/AMD), adding the container user to the groups that own the devices.
 - **Network**: MVSim downloads the 3D models and textures of the world from `mrpt.github.io` at the start of every run. If MVSim stays in "Loading the world..." and the log of the run shows `Error (code=4) running wget`, the container cannot resolve names: Docker copies the upstream DNS servers of the host, and glibc only uses the first three, so stale entries (e.g. from a disconnected VPN) break it even if the host works. Check with `docker run --rm alpine nslookup mrpt.github.io`, and fix the DNS configuration of the host or set `"dns"` in `/etc/docker/daemon.json`.
 - **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically. The MVSim main loop runs on a single core, so the single-thread performance of the CPU matters: if most runs are rejected for the period of the ground-truth pose, the computer is too slow for the benchmark. On laptops, check that the power profile is not limiting the CPU frequency (`powerprofilesctl get` should not show `power-saver`; set it with `powerprofilesctl set performance`), and keep the computer plugged in.
-- **GUI**: the runs are headless by default. To watch the MVSim 3D view and the real-time plots of each level, allow local containers to open windows and set `GUI=1`:
+- **GUI**: the runs are headless by default. To watch the MVSim 3D view, the real-time plots of each level and RViz, allow local containers to open windows and set `GUI=1` (add `WITHOUT_RVIZ=1` to leave RViz out):
   ```
   xhost +local:
   GUI=1 docker/run_campaign.sh ~/results_gui --categories 3 --planners theta --conditions nominal --seeds 1
+  GUI=1 WITHOUT_RVIZ=1 docker/run_campaign.sh ~/results_gui --categories 3 --planners theta --conditions nominal --seeds 1
   ```
-  `GUI=1` shares the X server of the desktop with the container (`DISPLAY` and `/tmp/.X11-unix`) and passes `headless:=False` and `plot:=True` to the runs. Without the script, add `-e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:ro` to `docker run`, and `--arg headless:=False --arg plot:=True` to `run_batch.py`. RViz is not included in the image. Drawing the windows adds load to the computer, so keep these runs out of the folders of the campaigns. `xhost -local:` revokes the access when done.
+  `GUI=1` shares the X server of the desktop with the container (`DISPLAY` and `/tmp/.X11-unix`) and passes `headless:=False`, `plot:=True` and `use_rviz:=True` to the runs (RViz is only used in Categories 2 and 3). Without the script, add `-e DISPLAY=$DISPLAY -e QT_X11_NO_MITSHM=1 -v /tmp/.X11-unix:/tmp/.X11-unix:ro` to `docker run`, and `--arg headless:=False --arg plot:=True --arg use_rviz:=True` to `run_batch.py`. Drawing the windows adds load to the computer, so keep these runs out of the folders of the campaigns. `xhost -local:` revokes the access when done.
+- **Foxglove**: the image includes [foxglove_bridge](https://docs.foxglove.dev/docs/visualization/ros-foxglove-bridge). With `FOXGLOVE=1`, the runs start it and its port is published on the host, so [Foxglove](https://foxglove.dev/) can connect to `ws://localhost:8765` (another port with `FOXGLOVE_PORT=...`); it works with or without `GUI=1`, e.g. on a remote computer. A layout for the benchmark is in [`foxglove/greenhouse_layout.json`](benchmark_bringup/benchmark_bringup/foxglove/greenhouse_layout.json) (Layouts, Import from file).
 - **Building the image**: `docker build -f docker/Dockerfile -t greenhouse-benchmark .` from the repository root, with its submodules checked out. The MVSim version is set with `--build-arg MVSIM_REF=<tag or commit>`.
 
 🧩 Evaluating your own control law

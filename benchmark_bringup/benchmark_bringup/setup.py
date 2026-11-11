@@ -29,6 +29,8 @@ setup(
         ("share/" + package_name + "/configuration", glob("configuration/*")),
         # RVIZ
         ("share/" + package_name + "/rviz", glob("rviz/*.rviz")),
+        # Foxglove layout
+        ("share/" + package_name + "/foxglove", glob("foxglove/*.json")),
     ],
     install_requires=["setuptools"],
     zip_safe=True,

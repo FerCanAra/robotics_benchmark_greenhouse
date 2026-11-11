@@ -1,0 +1,473 @@
+{
+  "configById": {
+    "Tab!nav": {
+      "activeTabIdx": 0,
+      "tabs": [
+        {
+          "title": "Navigation",
+          "layout": {
+            "direction": "row",
+            "splitPercentage": 62,
+            "first": "3D!scene",
+            "second": {
+              "direction": "column",
+              "splitPercentage": 12,
+              "first": "RawMessages!status",
+              "second": {
+                "direction": "column",
+                "splitPercentage": 50,
+                "first": "Plot!linvel",
+                "second": "Plot!angvel"
+              }
+            }
+          }
+        },
+        {
+          "title": "Low level (wheels)",
+          "layout": {
+            "direction": "column",
+            "splitPercentage": 50,
+            "first": {
+              "direction": "row",
+              "first": "Plot!wl",
+              "second": "Plot!wr"
+            },
+            "second": {
+              "direction": "row",
+              "first": "Plot!torque",
+              "second": {
+                "direction": "column",
+                "first": "Plot!err",
+                "second": "Plot!terrain"
+              }
+            }
+          }
+        },
+        {
+          "title": "Log",
+          "layout": "RosOut!log"
+        }
+      ]
+    },
+    "3D!scene": {
+      "cameraState": {
+        "perspective": false,
+        "distance": 27,
+        "phi": 0.0001,
+        "thetaOffset": 0,
+        "targetOffset": [
+          13.3,
+          10.9,
+          0
+        ],
+        "target": [
+          0,
+          0,
+          0
+        ],
+        "targetOrientation": [
+          0,
+          0,
+          0,
+          1
+        ],
+        "fovy": 45,
+        "near": 0.01,
+        "far": 5000
+      },
+      "followMode": "follow-none",
+      "followTf": "map",
+      "scene": {
+        "enableStats": false,
+        "backgroundColor": "#26292e",
+        "transforms": {
+          "showLabel": false,
+          "axisScale": 0.6
+        }
+      },
+      "transforms": {
+        "frame:odom": {
+          "visible": false
+        },
+        "frame:map": {
+          "visible": false
+        }
+      },
+      "layers": {
+        "grid": {
+          "visible": true,
+          "frameLocked": true,
+          "label": "Grid (1 m)",
+          "instanceId": "grid",
+          "layerId": "foxglove.Grid",
+          "frameId": "map",
+          "size": 26,
+          "divisions": 26,
+          "lineWidth": 0.5,
+          "color": "#8c8c8c40",
+          "position": [
+            13,
+            11,
+            0
+          ],
+          "rotation": [
+            0,
+            0,
+            0
+          ],
+          "order": 1
+        }
+      },
+      "topics": {
+        "/map": {
+          "visible": true,
+          "colorMode": "map",
+          "alpha": 0.8
+        },
+        "/global_costmap/costmap": {
+          "visible": false,
+          "colorMode": "costmap",
+          "alpha": 0.15
+        },
+        "/local_costmap/costmap": {
+          "visible": true,
+          "colorMode": "costmap",
+          "alpha": 0.6
+        },
+        "/plan": {
+          "visible": true,
+          "type": "line",
+          "lineWidth": 0.06,
+          "gradient": [
+            "#3478f6ff",
+            "#3478f6ff"
+          ]
+        },
+        "/global_plan": {
+          "visible": true,
+          "type": "line",
+          "lineWidth": 0.04,
+          "gradient": [
+            "#ffaa00ff",
+            "#ffaa00ff"
+          ]
+        },
+        "/received_global_plan": {
+          "visible": true,
+          "type": "line",
+          "lineWidth": 0.04,
+          "gradient": [
+            "#ffaa00ff",
+            "#ffaa00ff"
+          ]
+        },
+        "/transformed_global_plan": {
+          "visible": true,
+          "type": "line",
+          "lineWidth": 0.04,
+          "gradient": [
+            "#ffaa00ff",
+            "#ffaa00ff"
+          ]
+        },
+        "/local_plan": {
+          "visible": true,
+          "type": "line",
+          "lineWidth": 0.06,
+          "gradient": [
+            "#00dc5aff",
+            "#00dc5aff"
+          ]
+        },
+        "/goal_markers": {
+          "visible": true
+        },
+        "/chassis_markers": {
+          "visible": true
+        },
+        "/local_costmap/published_footprint": {
+          "visible": true,
+          "color": "#ff3c3cff"
+        },
+        "/laser1": {
+          "visible": true,
+          "colorMode": "flat",
+          "flatColor": "#ff2828ff",
+          "pointSize": 4,
+          "pointShape": "square"
+        },
+        "/base_pose_ground_truth": {
+          "visible": true,
+          "type": "arrow",
+          "color": "#e6e6e6ff",
+          "arrowScale": [
+            0.8,
+            0.12,
+            0.12
+          ]
+        },
+        "/particlecloud": {
+          "visible": false
+        }
+      },
+      "publish": {
+        "type": "pose",
+        "poseTopic": "/goal_pose",
+        "pointTopic": "/clicked_point",
+        "poseEstimateTopic": "/initialpose",
+        "poseEstimateXDeviation": 0.5,
+        "poseEstimateYDeviation": 0.5,
+        "poseEstimateThetaDeviation": 0.26
+      },
+      "imageMode": {},
+      "foxglovePanelTitle": "Greenhouse (map frame)"
+    },
+    "RawMessages!status": {
+      "topicPath": "/benchmark/status.data",
+      "diffEnabled": false,
+      "diffMethod": "custom",
+      "diffTopicPath": "",
+      "showFullMessageForDiff": false,
+      "expansion": "all",
+      "fontSize": 13,
+      "foxglovePanelTitle": "Run status (/benchmark/status)"
+    },
+    "Plot!linvel": {
+      "paths": [
+        {
+          "value": "/cmd_vel_nav.linear.x",
+          "enabled": true,
+          "color": "#f5a623",
+          "label": "controller (cmd_vel_nav)",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/cmd_vel.linear.x",
+          "enabled": true,
+          "color": "#4e98e2",
+          "label": "smoothed (cmd_vel)",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/base_pose_ground_truth.twist.twist.linear.x",
+          "enabled": true,
+          "color": "#3cc47c",
+          "label": "ground truth",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 240,
+      "foxglovePanelTitle": "Linear velocity [m/s]"
+    },
+    "Plot!angvel": {
+      "paths": [
+        {
+          "value": "/cmd_vel_nav.angular.z",
+          "enabled": true,
+          "color": "#f5a623",
+          "label": "controller (cmd_vel_nav)",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/cmd_vel.angular.z",
+          "enabled": true,
+          "color": "#4e98e2",
+          "label": "smoothed (cmd_vel)",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/base_pose_ground_truth.twist.twist.angular.z",
+          "enabled": true,
+          "color": "#3cc47c",
+          "label": "ground truth",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 240,
+      "foxglovePanelTitle": "Angular velocity [rad/s]"
+    },
+    "Plot!wl": {
+      "paths": [
+        {
+          "value": "/log/wheel_1/pid_sp_vel_l.data",
+          "enabled": true,
+          "color": "#f5a623",
+          "label": "setpoint",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/log/wheel_1/pid_act_vel_l.data",
+          "enabled": true,
+          "color": "#4e98e2",
+          "label": "actual",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 240,
+      "foxglovePanelTitle": "Left wheel velocity [m/s]"
+    },
+    "Plot!wr": {
+      "paths": [
+        {
+          "value": "/log/wheel_1/pid_sp_vel_r.data",
+          "enabled": true,
+          "color": "#f5a623",
+          "label": "setpoint",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/log/wheel_1/pid_act_vel_r.data",
+          "enabled": true,
+          "color": "#4e98e2",
+          "label": "actual",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 240,
+      "foxglovePanelTitle": "Right wheel velocity [m/s]"
+    },
+    "Plot!torque": {
+      "paths": [
+        {
+          "value": "/log/wheel_1/pid_torque_l.data",
+          "enabled": true,
+          "color": "#4e98e2",
+          "label": "left",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/log/wheel_1/pid_torque_r.data",
+          "enabled": true,
+          "color": "#f5a623",
+          "label": "right",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/log/wheel_1/pid_feedforward.data",
+          "enabled": true,
+          "color": "#a463f2",
+          "label": "slope feedforward",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 240,
+      "foxglovePanelTitle": "Motor torque [N m]"
+    },
+    "Plot!err": {
+      "paths": [
+        {
+          "value": "/log/wheel_1/pid_error_l.data",
+          "enabled": true,
+          "color": "#4e98e2",
+          "label": "left",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/log/wheel_1/pid_error_r.data",
+          "enabled": true,
+          "color": "#f5a623",
+          "label": "right",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 240,
+      "foxglovePanelTitle": "Wheel velocity error [m/s]"
+    },
+    "Plot!terrain": {
+      "paths": [
+        {
+          "value": "/log/wheel_1/friction_mu.data",
+          "enabled": true,
+          "color": "#3cc47c",
+          "label": "friction mu (wheel 1)",
+          "timestampMethod": "receiveTime"
+        },
+        {
+          "value": "/log/pose/q4pitch.data",
+          "enabled": true,
+          "color": "#e5484d",
+          "label": "pitch [rad]",
+          "timestampMethod": "receiveTime"
+        }
+      ],
+      "showXAxisLabels": true,
+      "showYAxisLabels": true,
+      "showLegend": true,
+      "legendDisplay": "floating",
+      "showPlotValuesInLegend": false,
+      "isSynced": true,
+      "xAxisVal": "timestamp",
+      "followingViewWidth": 30,
+      "sidebarDimension": 240,
+      "foxglovePanelTitle": "Terrain"
+    },
+    "RosOut!log": {
+      "searchTerms": [],
+      "minLogLevel": 2,
+      "nameFilter": {
+        "foxglove_bridge": {
+          "visible": false
+        }
+      },
+      "fontSize": 12,
+      "showLevel": true,
+      "showTime": true,
+      "showName": true,
+      "foxglovePanelTitle": "ROS log (warnings and errors)"
+    }
+  },
+  "globalVariables": {},
+  "userNodes": {},
+  "playbackConfig": {
+    "speed": 1
+  },
+  "layout": "Tab!nav"
+}
