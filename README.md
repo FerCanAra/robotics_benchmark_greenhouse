@@ -99,7 +99,9 @@ sudo rm /etc/apt/sources.list.d/ros2-testing.list && sudo apt update
 dpkg -l ros-humble-mrpt-core | grep 3.6    # must show 3.6.x
 ```
 Reboot after installing or upgrading MRPT or the NVIDIA driver.
+
 5. [MVSim](https://github.com/MRPT/mvsim): until its next release includes `<random_seed>`, `<log_period>` and the turn slip compensation of `twist_pid`, clone its `develop` branch into the same workspace (`git clone https://github.com/MRPT/mvsim.git` in `~/ros2_ws/src`). Do not install the apt package `ros-humble-mvsim`, which is older and may shadow the one built from source; remove it if present (`sudo apt remove ros-humble-mvsim`).
+
 6. **ROS 2 middleware: Fast DDS.** The benchmark is tested with Fast DDS, the default of ROS 2 Humble and the one used in the Docker image. 
 ```
 export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
