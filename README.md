@@ -91,8 +91,19 @@ sudo apt install git
 sudo apt install python3-colcon-common-extensions
 sudo apt install python3-rosdep2
 ```
-4. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html). They will be installed in the rosdep commands.
-5. [MVSim](https://github.com/MRPT/mvsim): until its next release includes `<random_seed>`, `<log_period>` and the turn slip compensation of `twist_pid`, clone its `develop` branch into the same workspace (`git clone https://github.com/MRPT/mvsim.git` in `~/ros2_ws/src`).
+4. [The Mobile Robot Programming Toolkit (MRPT)](https://docs.mrpt.org/reference/latest/download-mrpt.html) **≥ 3.6**. The results of the project were obtained with MRPT 3.6.2. Until MRPT 3.6 reaches the stable ROS 2 repository, install it from `ros2-testing` (the testing repository is enabled only for this upgrade):
+```
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2-testing/ubuntu jammy main" | sudo tee /etc/apt/sources.list.d/ros2-testing.list
+sudo apt update && sudo apt install 'ros-humble-mrpt-*'
+sudo rm /etc/apt/sources.list.d/ros2-testing.list && sudo apt update
+dpkg -l ros-humble-mrpt-core | grep 3.6    # must show 3.6.x
+```
+Reboot after installing or upgrading MRPT or the NVIDIA driver.
+5. [MVSim](https://github.com/MRPT/mvsim): until its next release includes `<random_seed>`, `<log_period>` and the turn slip compensation of `twist_pid`, clone its `develop` branch into the same workspace (`git clone https://github.com/MRPT/mvsim.git` in `~/ros2_ws/src`). Do not install the apt package `ros-humble-mvsim`, which is older and may shadow the one built from source; remove it if present (`sudo apt remove ros-humble-mvsim`).
+6. **ROS 2 middleware: Fast DDS.** The benchmark is tested with Fast DDS, the default of ROS 2 Humble and the one used in the Docker image. 
+```
+export RMW_IMPLEMENTATION=rmw_fastrtps_cpp
+```
 
 🛠️ Install and build
 --------------------
@@ -110,7 +121,14 @@ rosdep install --from-paths src -y --ignore-src
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
-To use exactly the version of the article, check out the release tag before building: git checkout v1.2.0 && git submodule update --recursive.
+To use exactly the version of the article, check out the release tag before building: git checkout v1.2.0 && git submodule update --recursive. Check the installation with a single run of the reference case (about 2 minutes); it must end as `SUCCEEDED` and `VALID`, with a time to goal of about 45–48 s:
+```
+cd ~/ros2_ws && source install/setup.bash
+python3 src/robotics_benchmark_greenhouse/benchmark_bringup/benchmark_bringup/tools/run_batch.py \
+    --out ~/results_check --categories 3 --planners theta --conditions nominal --seeds 1
+grep -h '"time_to_goal"' -r ~/results_check
+```
+If the run succeeds but takes much longer (100 s or more), see [Troubleshooting](#troubleshooting).
 
 🚀 Usage
 --------------------
@@ -290,6 +308,18 @@ Step by step, on a fresh Ubuntu computer:
 
 Then run the same campaign with run_batch.py and compare with the reference results.
 
+🩺 Troubleshooting <a name="troubleshooting"></a>
+--------------------
+If a run succeeds but is slow (Category 3 nominal taking 100 s or more instead of about 46 s), or the planner reports `Either of the start or goal pose are an obstacle!`, check, in this order:
+
+1. **MRPT version**: `dpkg -l | grep ros-humble-mrpt-core` must show 3.6.x. With 3.5, upgrade as in Prerequisites, rebuild MVSim (`rm -rf build/mvsim install/mvsim && colcon build --packages-select mvsim --cmake-args -DCMAKE_BUILD_TYPE=Release`) and reboot.
+2. **Middleware**: `echo $RMW_IMPLEMENTATION` must be `rmw_fastrtps_cpp` (or empty).
+3. **MVSim in use**: `ros2 pkg prefix mvsim` must point to your workspace (`.../install/mvsim`), not to `/opt/ros/humble`.
+4. **Leftover processes** from an interrupted launch: `ps aux | grep -E "mvsim|nav2|rviz2" | grep -v grep` must show nothing before a new run.
+
+If it still differs, compare with the Docker image on the same computer, which contains the exact versions used in the article.
+
+**GPU and display.** On laptops with hybrid graphics, use the dedicated GPU for the whole system (e.g. "dGPU only" in the BIOS, or `sudo prime-select nvidia`); `glxinfo -B` must report it. In that case, do not set PRIME offload variables (`__NV_PRIME_RENDER_OFFLOAD`, `__GLX_VENDOR_LIBRARY_NAME`): they may leave the MVSim window black. A black or frozen MVSim window after upgrading MRPT or the driver is usually solved by rebooting.
 
 🖥️ Virtual Machine <a name="virtual-machine"></a>
 --------------------
