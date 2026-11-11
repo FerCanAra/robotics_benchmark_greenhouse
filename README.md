@@ -14,12 +14,13 @@ This repository provides a standardised, reproducible benchmark for mobile robot
 
 The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also be run on Windows and macOS by installing a [virtual machine](#virtual-machine).
 
-> **Note:** Version v1.1.0 corresponds to the revised version of the associated article. Process tested on 8th November 2026.
+> **Note:** Version v1.2.0 corresponds to the revised version of the associated article. Process tested on 11th November 2026.
 
 📑 Unreleased: official MVSim
 ------------------
 
-- The benchmark now uses the official [MVSim](https://github.com/MRPT/mvsim) (`develop` branch, built from source until its next release) instead of a fork. Its physics are those of current MVSim (friction circle, load transfer, gravity on slopes), so the results differ from those of v1.1.0 and of the article, which used the fork: to reproduce the article, use the release tag `v1.1.0`.
+📑 What's new in v1.2.0
+- The benchmark now uses the official [MVSim](https://github.com/MRPT/mvsim) (`develop` branch, built from source until its next release) instead of a fork. Its physics are those of current MVSim (friction circle, load transfer, gravity on slopes), with turn-slip compensation for skid-steer robots. **This is the version used in the revised article.** Version v1.1.0 (MVSim fork) is kept for reference.
 - Terrain sectors are `PropertyRegion` elements of the world file that override, per wheel, the friction coefficient (`friction_mu`) and the rolling resistance (`friction_C_rr`). The damping `C_damping` is an internal friction of the wheel axle, so it is now the same in all the sectors.
 - The low-level signals are read from the MVSim vehicle logs, published as ROS 2 topics (`/log/wheel_1/*`, `/log/pose/*`), instead of a custom `benchmark_msg` message.
 - The seed (`seed:=N`) now also fixes the arrangement of the plants, so a run is fully reproducible from its seed.
@@ -109,7 +110,7 @@ rosdep install --from-paths src -y --ignore-src
 colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DCMAKE_EXPORT_COMPILE_COMMANDS=ON
 source install/setup.bash
 ```
-To use exactly the version of the article, check out the release tag before building: git checkout v1.1.0 && git submodule update --recursive.
+To use exactly the version of the article, check out the release tag before building: git checkout v1.2.0 && git submodule update --recursive.
 
 🚀 Usage
 --------------------
