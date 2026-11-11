@@ -37,7 +37,7 @@ The simulator has been tested on ROS 2 Humble and Ubuntu 22.04 LTS. It can also 
 - Redesigned metrics: time-averaged indices of normalised signals (SAE, SCI), relative indices with respect to the reference stack, and task-level indicators (success, time to goal, path length, clearance, contacts).
 - Campaign tools: scripts to run complete campaigns with a real-time validity check and to compute the tables, heatmaps and statistical comparisons (tools/).
 - Simulator fixes: odometry twist published by MVSim and lateral friction factor for skid-steer vehicles (MVSim fork; see above for the current version).
-- Reference results: the 336 runs of the reference case are archived in [Zenodo](https://doi.org/10.5281/zenodo.22679881).
+- Reference results: the 336 runs of the reference case are archived in [Zenodo](https://doi.org/10.5281/zenodo.24133270).
 
 📑 Citation
 ------------------
