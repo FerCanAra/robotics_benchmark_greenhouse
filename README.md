@@ -217,14 +217,46 @@ The reference case comprises 336 valid runs (8 conditions × 6 runs; PI in Categ
 --------------------
 The Docker image contains the complete benchmark (ROS 2 Humble, Nav2, MRPT, MVSim and this repository), so a campaign can be reproduced without installing anything else. It is published in the GitHub Container Registry, and the exact image used for the results of the article is archived in Zenodo.
 
-```
-docker pull ghcr.io/fercanara/robotics_benchmark_greenhouse:latest
-docker/run_campaign.sh ~/results --categories 2 --controllers teb mppi rpp --conditions all --seeds 6
-```
+Step by step, on a fresh Ubuntu computer:
+
+1. Install Docker (only once), and add your user to the `docker` group (log out and in again afterwards):
+   ```
+   curl -fsSL https://get.docker.com | sh
+   sudo usermod -aG docker $USER
+   ```
+2. Only for NVIDIA GPUs, with the NVIDIA driver already installed (`nvidia-smi` must work): install the NVIDIA Container Toolkit (only once). Intel/AMD GPUs do not need this step.
+   ```
+   curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg
+   curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | \
+     sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | \
+     sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list
+   sudo apt update && sudo apt install -y nvidia-container-toolkit
+   sudo nvidia-ctk runtime configure --runtime=docker && sudo systemctl restart docker
+   ```
+3. Download the image, either the latest build of `main` or the one of a given commit:
+   ```
+   docker pull ghcr.io/fercanara/robotics_benchmark_greenhouse:latest
+   # or: docker pull ghcr.io/fercanara/robotics_benchmark_greenhouse:sha-<commit>
+   ```
+4. Clone this repository (only `docker/run_campaign.sh` is needed to run the image):
+   ```
+   git clone https://github.com/FerCanAra/robotics_benchmark_greenhouse.git
+   cd robotics_benchmark_greenhouse
+   ```
+5. Run a campaign, e.g. a single run without GUI, or with the MVSim window and the real-time plots:
+   ```
+   docker/run_campaign.sh ~/results --categories 3 --planners theta --controllers teb --conditions nominal --seeds 1
+
+   xhost +local:
+   GUI=1 docker/run_campaign.sh ~/results_gui --categories 3 --planners theta --controllers teb --conditions nominal --seeds 1
+   ```
+   A complete campaign, e.g. for Category 2: `docker/run_campaign.sh ~/results --categories 2 --controllers teb mppi rpp --conditions all --seeds 6`. Each run writes its log in `RESULTS_DIR/logs/`, and `RESULTS_DIR/batch_log.csv` summarizes the status and the real-time factor of every run.
+
 `run_campaign.sh` runs `run_batch.py` inside the container, with the same arguments, and writes the results in the given folder (`IMAGE=...` selects another image). The image archived in Zenodo is loaded with `docker load -i <file>.tar.gz`.
 
-- **GPU**: MVSim renders the sensors with OpenGL. Without GPU access the simulation runs much slower than real time and the validity check rejects every run. `run_campaign.sh` gives the container access to an NVIDIA GPU (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) or to `/dev/dri` (Intel/AMD).
-- **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically. The MVSim main loop runs on a single core, so the single-thread performance of the CPU matters: if most runs are rejected for the period of the ground-truth pose, the computer is too slow for the benchmark.
+- **GPU**: MVSim renders the sensors with OpenGL. Without GPU access the simulation runs much slower than real time and the validity check rejects every run. `run_campaign.sh` gives the container access to an NVIDIA GPU (it requires the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html)) or to `/dev/dri` (Intel/AMD), adding the container user to the groups that own the devices.
+- **Network**: MVSim downloads the 3D models and textures of the world from `mrpt.github.io` at the start of every run. If MVSim stays in "Loading the world..." and the log of the run shows `Error (code=4) running wget`, the container cannot resolve names: Docker copies the upstream DNS servers of the host, and glibc only uses the first three, so stale entries (e.g. from a disconnected VPN) break it even if the host works. Check with `docker run --rm alpine nslookup mrpt.github.io`, and fix the DNS configuration of the host or set `"dns"` in `/etc/docker/daemon.json`.
+- **CPU**: every run must keep real time, so do not run other heavy processes during a campaign; invalid runs are repeated automatically. The MVSim main loop runs on a single core, so the single-thread performance of the CPU matters: if most runs are rejected for the period of the ground-truth pose, the computer is too slow for the benchmark. On laptops, check that the power profile is not limiting the CPU frequency (`powerprofilesctl get` should not show `power-saver`; set it with `powerprofilesctl set performance`), and keep the computer plugged in.
 - **GUI**: the runs are headless by default. To watch the MVSim 3D view and the real-time plots of each level, allow local containers to open windows and set `GUI=1`:
   ```
   xhost +local:

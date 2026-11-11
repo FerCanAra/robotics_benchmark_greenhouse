@@ -26,7 +26,11 @@ GPU_ARGS=()
 if command -v nvidia-smi > /dev/null && nvidia-smi -L > /dev/null 2>&1; then
 	GPU_ARGS=(--gpus all -e NVIDIA_DRIVER_CAPABILITIES=all)
 elif [ -d /dev/dri ]; then
+	# The container user needs the groups that own the devices (video, render):
 	GPU_ARGS=(--device /dev/dri)
+	for gid in $(stat -c %g /dev/dri/card* /dev/dri/renderD* 2> /dev/null | sort -u); do
+		GPU_ARGS+=(--group-add "$gid")
+	done
 else
 	echo "WARNING: no GPU found: the runs will probably not keep real time." >&2
 fi
